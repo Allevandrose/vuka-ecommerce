@@ -46,7 +46,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // ============================================
-        // DELIVERY STAFF - Pending Approval
+        // DELIVERY STAFF - Activated (for testing)
         // Email: delivery@vuka.com
         // Password: delivery
         // ============================================
@@ -56,13 +56,13 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('delivery'),
             'user_type' => 'delivery',
             'email_verified_at' => now(),
-            'is_active' => false,        // Inactive until admin approves
-            'approved_at' => null,       // Not approved yet
+            'is_active' => true,        // Active
+            'approved_at' => now(),     // Approved
             'is_weekend_override' => false,
         ]);
 
         // ============================================
-        // PICKUP STAFF - Pending Approval
+        // PICKUP STAFF - Activated (for testing)
         // Email: pickup@vuka.com
         // Password: pickup
         // ============================================
@@ -72,8 +72,24 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('pickup'),
             'user_type' => 'pickup',
             'email_verified_at' => now(),
-            'is_active' => false,        // Inactive until admin approves
-            'approved_at' => null,       // Not approved yet
+            'is_active' => true,        // Active
+            'approved_at' => now(),     // Approved
+            'is_weekend_override' => false,
+        ]);
+
+        // ============================================
+        // PENDING DELIVERY (for testing approval flow)
+        // Email: pending@vuka.com
+        // Password: pending
+        // ============================================
+        User::create([
+            'name' => 'Pending Staff',
+            'email' => 'pending@vuka.com',
+            'password' => Hash::make('pending'),
+            'user_type' => 'delivery',
+            'email_verified_at' => now(),
+            'is_active' => false,
+            'approved_at' => null,
             'is_weekend_override' => false,
         ]);
 

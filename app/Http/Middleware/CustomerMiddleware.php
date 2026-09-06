@@ -17,7 +17,6 @@ class CustomerMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if user is authenticated and is an instance of your User model
         /** @var User|null $user */
         $user = Auth::user();
 
@@ -26,10 +25,11 @@ class CustomerMiddleware
         }
 
         // Check if user is a customer
-        if (!method_exists($user, 'isCustomer') || !$user->isCustomer()) {
+        if (!$user->isCustomer()) {
             abort(403, 'Access denied. Customer area only.');
         }
 
+        // Customers always have access (they don't need approval)
         return $next($request);
     }
 }

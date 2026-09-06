@@ -10,43 +10,53 @@ use App\Models\User;
 
 class CheckStaffStatus
 {
-public function handle(Request $request, Closure $next): Response
-{
-/** @var User|null $user */
-$user = Auth::user();
+    public function handle(Request $request, Closure $next): Response
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
 
-if (!$user) {
-return redirect()->route('login');
-}
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Please login to continue.');
+        }
 
-// Customers always have access
-if ($user->isCustomer()) {
-return $next($request);
-}
+        // Customers always have access
+        if ($user->isCustomer()) {
+            return $next($request);
+        }
 
-// Check if account is active and approved
-if (!$user->is_active) {
-Auth::logout();
-return redirect()->route('login')
-->with('error', 'Your account is deactivated. Please contact the administrator.');
-}
+        // Check if user can access the system
+        if (!$user->canAccessSystem()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-if (!$user->approved_at) {
-Auth::logout();
-return redirect()->route('login')
-->with('error', 'Your account is pending approval. Please wait for admin confirmation.');
-}
+            $errorMessage = $this->getAccessErrorMessage($user);
+            return redirect()->route('login')->with('error', $errorMessage);
+        }
 
-// Check weekend restriction
-if ($user->isWeekendDisabled()) {
-Auth::logout();
-return redirect()->route('login')
-->with('error', 'Staff access is restricted on weekends. Please contact the administrator for override.');
-}
+        // Update last activity
+        $user->update(['last_activity_at' => now()]);
 
-// Update last activity
-$user->update(['last_activity_at' => now()]);
+        return $next($request);
+    }
 
-return $next($request);
-}
+    /**
+     * Get the appropriate error message based on user status
+     */
+    private function getAccessErrorMessage(User $user): string
+    {
+        if (!$user->is_active) {
+            return 'Your account is deactivated. Please contact the administrator.';
+        }
+
+        if ($user->isStaff() && !$user->approved_at) {
+            return 'Your account is pending approval. Please wait for admin confirmation.';
+        }
+
+        if ($user->isWeekendDisabled()) {
+            return 'Staff access is restricted on weekends. Please contact the administrator for override.';
+        }
+
+        return 'Access denied. Please contact the administrator.';
+    }
 }

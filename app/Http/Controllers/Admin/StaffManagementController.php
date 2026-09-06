@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class StaffManagementController extends Controller
 {
@@ -39,10 +40,17 @@ class StaffManagementController extends Controller
 
         $token = env('STAFF_REGISTRATION_TOKEN', 'vuka-staff-2024');
 
-        Mail::to($validated['email'])->send(new StaffRegistrationInvite($token, $validated['user_type']));
+        try {
+            Mail::to($validated['email'])->send(new StaffRegistrationInvite($token, $validated['user_type']));
 
-        return redirect()->route('admin.staff.index')
-            ->with('success', 'Invitation sent to staff member! They will receive an email with registration instructions.');
+            return redirect()->route('admin.staff.index')
+                ->with('success', 'Invitation sent to staff member! They will receive an email with registration instructions.');
+        } catch (\Exception $e) {
+            Log::error('Failed to send staff invitation: ' . $e->getMessage());
+
+            return redirect()->route('admin.staff.index')
+                ->with('error', 'Failed to send invitation. Please try again.');
+        }
     }
 
     public function activate(User $user)
@@ -52,12 +60,23 @@ class StaffManagementController extends Controller
                 ->with('error', 'Only staff accounts can be activated.');
         }
 
+        // Check if already active
+        if ($user->is_active && $user->approved_at !== null) {
+            return redirect()->route('admin.staff.index')
+                ->with('info', "{$user->name} is already activated.");
+        }
+
         $user->activate();
 
-        Mail::to($user->email)->send(new StaffAccountActivated($user));
+        try {
+            Mail::to($user->email)->send(new StaffAccountActivated($user));
+        } catch (\Exception $e) {
+            Log::error('Failed to send activation email: ' . $e->getMessage());
+            // Continue even if email fails
+        }
 
         return redirect()->route('admin.staff.index')
-            ->with('success', "{$user->name} has been activated successfully!");
+            ->with('success', "{$user->name} has been activated successfully! They can now log in.");
     }
 
     public function deactivate(User $user)

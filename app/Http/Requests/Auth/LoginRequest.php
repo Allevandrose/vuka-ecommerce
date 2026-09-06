@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -42,11 +43,25 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
+            ]);
+        }
+
+        // Check user status after authentication
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (!$user->canAccessSystem()) {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            $errorMessage = $this->getAccessErrorMessage($user);
+            throw ValidationException::withMessages([
+                'email' => $errorMessage,
             ]);
         }
 
@@ -60,7 +75,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -81,6 +96,26 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
+    }
+
+    /**
+     * Get the appropriate error message based on user status.
+     */
+    private function getAccessErrorMessage(User $user): string
+    {
+        if (!$user->is_active) {
+            return 'Your account is deactivated. Please contact the administrator.';
+        }
+
+        if ($user->isStaff() && !$user->approved_at) {
+            return 'Your account is pending approval. Please wait for admin confirmation.';
+        }
+
+        if ($user->isWeekendDisabled()) {
+            return 'Staff access is restricted on weekends. Please contact the administrator for override.';
+        }
+
+        return 'Access denied. Please contact the administrator.';
     }
 }
