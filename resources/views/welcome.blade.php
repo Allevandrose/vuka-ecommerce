@@ -358,6 +358,43 @@
             @endforeach
         </div>
 
+        <!-- ============================================================
+        VENDOR CTA SECTION  ← NEW
+        ============================================================ -->
+        <div class="relative overflow-hidden rounded-xl2 mt-9 text-white"
+             style="background-image: linear-gradient(135deg, #14231C 0%, #20503C 100%);">
+            {{-- Decorative background icon --}}
+            <i class="fas fa-store absolute -right-3 -bottom-3 text-[9rem] text-white/[0.05] rotate-[-6deg] pointer-events-none"></i>
+
+            <div class="relative z-10 px-6 py-10 sm:px-12 sm:py-14 max-w-2xl">
+                <span class="inline-flex items-center gap-2 text-sm text-white/75 mb-2">
+                    <i class="fas fa-handshake text-gold"></i> Partner with us
+                </span>
+
+                <h3 class="font-serif text-2xl sm:text-4xl font-semibold tracking-tight leading-[1.1]">
+                    Sell on VukaShop.<br class="hidden sm:inline"> Reach thousands of buyers.
+                </h3>
+
+                <p class="text-white/75 mt-3 mb-6 text-sm sm:text-base max-w-lg">
+                    Own a shop? Partner with VukaShop and list your products to customers
+                    across the country. Verified vendors, secure payouts, and logistics
+                    handled end-to-end.
+                </p>
+
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+                    <a href="{{ route('vendor.apply') }}"
+                       class="inline-flex items-center justify-center gap-2 bg-gold text-ink font-bold px-7 py-3 rounded-full hover:bg-gold/90 transition-colors text-sm shadow-[0_10px_24px_-8px_rgba(231,169,59,0.65)]">
+                        Become a Vendor <i class="fas fa-arrow-right text-xs"></i>
+                    </a>
+
+                    <a href="{{ route('login') }}"
+                       class="text-xs sm:text-sm text-white/60 hover:text-white/90 transition-colors">
+                        Already a vendor? Log in to your dashboard <i class="fas fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- NEWSLETTER -->
         <div class="bg-white border border-line rounded-xl2 px-5 py-8 sm:py-10 mt-9" x-data="{ email: '', sent: false }">
             <div class="text-center max-w-md mx-auto">
@@ -410,6 +447,7 @@
                     <h5 class="font-semibold text-sm mb-2">Company</h5>
                     <ul class="space-y-1.5">
                         <li><a href="#" class="text-ink/60 text-sm hover:text-moss transition-colors">About</a></li>
+                        <li><a href="{{ route('vendor.apply') }}" class="text-ink/60 text-sm hover:text-moss transition-colors">Become a Vendor</a></li>
                         <li><a href="#" class="text-ink/60 text-sm hover:text-moss transition-colors">Careers</a></li>
                         <li><a href="#" class="text-ink/60 text-sm hover:text-moss transition-colors">Privacy</a></li>
                         <li><a href="#" class="text-ink/60 text-sm hover:text-moss transition-colors">Terms</a></li>

@@ -22,6 +22,12 @@ class User extends Authenticatable
         'approved_at',
         'last_activity_at',
         'is_weekend_override',
+        // Vendor fields
+        'shop_name',
+        'shop_address',
+        'shop_latitude',
+        'shop_longitude',
+        'vendor_notes',
     ];
 
     protected $hidden = [
@@ -38,10 +44,15 @@ class User extends Authenticatable
             'approved_at' => 'datetime',
             'last_activity_at' => 'datetime',
             'is_weekend_override' => 'boolean',
+            'shop_latitude' => 'decimal:7',
+            'shop_longitude' => 'decimal:7',
         ];
     }
 
-    // Type check methods
+    // ============================================
+    // TYPE CHECK METHODS
+    // ============================================
+
     public function isAdmin(): bool
     {
         return $this->user_type === 'admin';
@@ -62,33 +73,52 @@ class User extends Authenticatable
         return $this->user_type === 'pickup';
     }
 
+    public function isVendor(): bool
+    {
+        return $this->user_type === 'vendor';
+    }
+
+    /**
+     * "Staff" = internal employees (admin, delivery, pickup).
+     * Vendors are external partners and deliberately excluded.
+     */
     public function isStaff(): bool
     {
         return in_array($this->user_type, ['admin', 'delivery', 'pickup']);
     }
 
+    // ============================================
+    // ACCESS CONTROL
+    // ============================================
+
     public function isAccountActive(): bool
     {
-        if ($this->isStaff()) {
+        if ($this->isStaff() || $this->isVendor()) {
             return $this->is_active && $this->approved_at !== null;
         }
         return $this->is_active;
     }
 
     /**
-     * Check if user can access the system
-     * Uses caching for performance
+     * Check if user can access the system.
+     * Uses caching for performance.
      */
     public function canAccessSystem(): bool
     {
         $cacheKey = "user_access_{$this->id}";
 
         return Cache::remember($cacheKey, 60, function () {
+            // Customers: only need is_active
             if ($this->isCustomer()) {
                 return $this->is_active;
             }
 
-            // Staff validation
+            // Vendors: need is_active + approved_at (no weekend rule)
+            if ($this->isVendor()) {
+                return $this->is_active && $this->approved_at !== null;
+            }
+
+            // Staff: is_active + approved_at + weekend rule
             if (!$this->is_active) {
                 return false;
             }
@@ -106,7 +136,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Clear access cache when user status changes
+     * Clear access cache when user status changes.
      */
     public function clearAccessCache(): void
     {
@@ -115,6 +145,7 @@ class User extends Authenticatable
 
     public function isWeekendDisabled(): bool
     {
+        // Only staff are subject to weekend restrictions
         if (!$this->isStaff()) {
             return false;
         }
@@ -129,18 +160,22 @@ class User extends Authenticatable
         return in_array($dayOfWeek, [0, 6]);
     }
 
+    // ============================================
+    // REDIRECT ROUTES
+    // ============================================
+
     public function getRedirectRoute(): string
     {
         if (!$this->canAccessSystem()) {
             return route('account.inactive');
         }
 
-        // Use route names instead of URLs for consistency
         return match ($this->user_type) {
             'admin' => route('admin.dashboard'),
             'customer' => route('customer.dashboard'),
             'delivery' => route('delivery.dashboard'),
             'pickup' => route('pickup.dashboard'),
+            'vendor' => route('vendor.dashboard'),
             default => route('dashboard'),
         };
     }
@@ -151,12 +186,35 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the appropriate error message based on user status
+     * Get dashboard route name (without full URL).
+     */
+    public function getDashboardRouteName(): string
+    {
+        if (!$this->canAccessSystem()) {
+            return 'account.inactive';
+        }
+
+        return match ($this->user_type) {
+            'admin' => 'admin.dashboard',
+            'customer' => 'customer.dashboard',
+            'delivery' => 'delivery.dashboard',
+            'pickup' => 'pickup.dashboard',
+            'vendor' => 'vendor.dashboard',
+            default => 'dashboard',
+        };
+    }
+
+    /**
+     * Get the appropriate error message based on user status.
      */
     public function getAccessErrorMessage(): string
     {
         if (!$this->is_active) {
             return 'Your account is deactivated. Please contact the administrator.';
+        }
+
+        if ($this->isVendor() && !$this->approved_at) {
+            return 'Your vendor account is pending approval. Please wait for admin confirmation.';
         }
 
         if ($this->isStaff() && !$this->approved_at) {
@@ -170,23 +228,9 @@ class User extends Authenticatable
         return 'Access denied. Please contact the administrator.';
     }
 
-    /**
-     * Get dashboard route name (without full URL)
-     */
-    public function getDashboardRouteName(): string
-    {
-        if (!$this->canAccessSystem()) {
-            return 'account.inactive';
-        }
-
-        return match ($this->user_type) {
-            'admin' => 'admin.dashboard',
-            'customer' => 'customer.dashboard',
-            'delivery' => 'delivery.dashboard',
-            'pickup' => 'pickup.dashboard',
-            default => 'dashboard',
-        };
-    }
+    // ============================================
+    // STATE TRANSITIONS
+    // ============================================
 
     public function activate(): void
     {

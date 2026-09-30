@@ -15,14 +15,14 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    
+
                     @auth
                         @if(auth()->user()->isAdmin())
                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                                 {{ __('Admin Panel') }}
                             </x-nav-link>
                         @endif
-                        
+
                         @if(auth()->user()->isCustomer())
                             <x-nav-link href="#" :active="false">
                                 {{ __('Shop') }}
@@ -31,16 +31,22 @@
                                 {{ __('Orders') }}
                             </x-nav-link>
                         @endif
-                        
+
                         @if(auth()->user()->isDelivery())
                             <x-nav-link :href="route('delivery.dashboard')" :active="request()->routeIs('delivery.dashboard')">
                                 {{ __('Deliveries') }}
                             </x-nav-link>
                         @endif
-                        
+
                         @if(auth()->user()->isPickup())
                             <x-nav-link :href="route('pickup.dashboard')" :active="request()->routeIs('pickup.dashboard')">
                                 {{ __('Pickups') }}
+                            </x-nav-link>
+                        @endif
+
+                        @if(auth()->user()->isVendor())
+                            <x-nav-link :href="route('vendor.dashboard')" :active="request()->routeIs('vendor.dashboard')">
+                                {{ __('My Shop') }}
                             </x-nav-link>
                         @endif
                     @endauth
@@ -65,7 +71,7 @@
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
                         </x-dropdown-link>
-                        
+
                         <!-- User Type Badge -->
                         <div class="px-4 py-2 text-xs text-gray-500">
                             Role: {{ ucfirst(Auth::user()->user_type) }}
@@ -102,14 +108,14 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            
+
             @auth
                 @if(auth()->user()->isAdmin())
                     <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                         {{ __('Admin Panel') }}
                     </x-responsive-nav-link>
                 @endif
-                
+
                 @if(auth()->user()->isCustomer())
                     <x-responsive-nav-link href="#" :active="false">
                         {{ __('Shop') }}
@@ -118,16 +124,22 @@
                         {{ __('Orders') }}
                     </x-responsive-nav-link>
                 @endif
-                
+
                 @if(auth()->user()->isDelivery())
                     <x-responsive-nav-link :href="route('delivery.dashboard')" :active="request()->routeIs('delivery.dashboard')">
                         {{ __('Deliveries') }}
                     </x-responsive-nav-link>
                 @endif
-                
+
                 @if(auth()->user()->isPickup())
                     <x-responsive-nav-link :href="route('pickup.dashboard')" :active="request()->routeIs('pickup.dashboard')">
                         {{ __('Pickups') }}
+                    </x-responsive-nav-link>
+                @endif
+
+                @if(auth()->user()->isVendor())
+                    <x-responsive-nav-link :href="route('vendor.dashboard')" :active="request()->routeIs('vendor.dashboard')">
+                        {{ __('My Shop') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth

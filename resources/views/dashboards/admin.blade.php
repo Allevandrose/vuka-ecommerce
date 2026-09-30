@@ -154,7 +154,7 @@
             </div>
 
             <!-- Quick Actions -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition">
                     <div class="p-6">
                         <h4 class="text-lg font-semibold text-gray-900 mb-2">📦 Manage Products</h4>
@@ -177,20 +177,52 @@
                     </div>
                 </div>
 
-                <!-- NEW: Staff Management Card -->
+                <!-- Staff Management Card -->
                 <div
                     class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition border-2 border-indigo-200">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-lg font-semibold text-gray-900">👔 Staff Management</h4>
-                            <span class="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full">
-                                New
-                            </span>
+                            <h4 class="text-lg font-semibold text-gray-900">👔 Staff</h4>
+                            @php
+                                $pendingStaff = \App\Models\User::whereIn('user_type', ['admin', 'delivery', 'pickup'])
+                                    ->where(function ($q) {
+                                        $q->where('is_active', false)->orWhereNull('approved_at');
+                                    })
+                                    ->count();
+                            @endphp
+                            @if ($pendingStaff > 0)
+                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                    {{ $pendingStaff }} pending
+                                </span>
+                            @endif
                         </div>
-                        <p class="text-sm text-gray-500 mb-4">Manage staff accounts, approvals, and weekend access.</p>
+                        <p class="text-sm text-gray-500 mb-4">Manage staff accounts and approvals.</p>
                         <a href="{{ route('admin.staff.index') }}"
                             class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                             Manage Staff
+                        </a>
+                    </div>
+                </div>
+
+                <!-- NEW: Vendor Management Card -->
+                <div
+                    class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition border-2 border-amber-200">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-gray-900">🏪 Vendors</h4>
+                            @php
+                                $pendingVendors = \App\Models\VendorApplication::where('status', 'pending')->count();
+                            @endphp
+                            @if ($pendingVendors > 0)
+                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                    {{ $pendingVendors }} pending
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-sm text-gray-500 mb-4">Review applications and manage vendors.</p>
+                        <a href="{{ route('admin.vendors.index') }}"
+                            class="inline-flex items-center px-4 py-2 bg-amber-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-amber-700">
+                            Manage Vendors
                         </a>
                     </div>
                 </div>

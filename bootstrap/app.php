@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'delivery' => \App\Http\Middleware\DeliveryMiddleware::class,
             'pickup' => \App\Http\Middleware\PickupMiddleware::class,
             'staff.status' => \App\Http\Middleware\CheckStaffStatus::class,
+            'vendor' => \App\Http\Middleware\VendorMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -77,12 +78,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            // Authentication
+            // Authentication — NOTE: now passes $exception into the 401 view
             if ($e instanceof \Illuminate\Auth\AuthenticationException) {
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'Unauthenticated. Please login.', 'success' => false], 401);
                 }
-                return response()->view('errors.401', [], 401);
+                return response()->view('errors.401', ['exception' => $e], 401);
             }
 
             // Authorization

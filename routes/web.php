@@ -4,6 +4,9 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\StaffManagementController;
 use App\Http\Controllers\Admin\StaffRegistrationController;
+use App\Http\Controllers\Admin\VendorManagementController;
+use App\Http\Controllers\VendorApplicationController;
+use App\Http\Controllers\VendorRegistrationController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +26,20 @@ Route::prefix('auth/google')->name('auth.google.')->group(function () {
     Route::get('/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('callback');
     Route::get('/redirect/{redirectTo?}', [GoogleAuthController::class, 'redirectToGoogleWithRedirect'])->name('redirect.custom');
     Route::get('/callback/custom', [GoogleAuthController::class, 'handleGoogleCallbackWithRedirect'])->name('callback.custom');
+});
+
+// ============================================
+// PUBLIC VENDOR APPLICATION
+// ============================================
+Route::prefix('vendor')->name('vendor.')->group(function () {
+    // Public application
+    Route::get('/apply', [VendorApplicationController::class, 'create'])->name('apply');
+    Route::post('/apply', [VendorApplicationController::class, 'store'])->name('apply.store');
+    Route::get('/apply/pending', [VendorApplicationController::class, 'pending'])->name('apply.pending');
+
+    // Invite-only registration (token in query string)
+    Route::get('/register', [VendorRegistrationController::class, 'showRegistrationForm'])->name('register.form');
+    Route::post('/register', [VendorRegistrationController::class, 'register'])->name('register');
 });
 
 // ============================================
@@ -53,10 +70,24 @@ Route::middleware(['auth', 'admin'])->prefix('admin/staff')->name('admin.staff.'
 });
 
 // ============================================
+// ADMIN VENDOR MANAGEMENT
+// ============================================
+Route::middleware(['auth', 'admin'])->prefix('admin/vendors')->name('admin.vendors.')->group(function () {
+    Route::get('/', [VendorManagementController::class, 'index'])->name('index');
+    Route::get('/{application}', [VendorManagementController::class, 'show'])->name('show');
+    Route::post('/{application}/approve', [VendorManagementController::class, 'approve'])->name('approve');
+    Route::post('/{application}/reject', [VendorManagementController::class, 'reject'])->name('reject');
+
+    // Vendor user actions (uses user id, not application)
+    Route::post('/user/{user}/activate', [VendorManagementController::class, 'activate'])->name('user.activate');
+    Route::post('/user/{user}/deactivate', [VendorManagementController::class, 'deactivate'])->name('user.deactivate');
+    Route::delete('/user/{user}', [VendorManagementController::class, 'destroy'])->name('user.destroy');
+});
+
+// ============================================
 // AUTHENTICATED ROUTES
 // ============================================
 Route::middleware(['auth', 'staff.status'])->group(function () {
-    // Dashboard route - now properly redirects
     Route::get('/dashboard', function () {
         /** @var User|null $user */
         $user = Auth::user();
@@ -65,17 +96,14 @@ Route::middleware(['auth', 'staff.status'])->group(function () {
             return redirect()->route('login');
         }
 
-        // Check if user can access the system
         if (!$user->canAccessSystem()) {
             Auth::logout();
             return redirect()->route('login')->with('error', $user->getAccessErrorMessage());
         }
 
-        // Redirect to the appropriate dashboard using route name
         return redirect()->route($user->getDashboardRouteName());
     })->name('dashboard');
 
-    // User type specific dashboards
     Route::get('/admin/dashboard', function () {
         return view('dashboards.admin');
     })->middleware('admin')->name('admin.dashboard');
@@ -92,12 +120,14 @@ Route::middleware(['auth', 'staff.status'])->group(function () {
         return view('dashboards.pickup');
     })->middleware('pickup')->name('pickup.dashboard');
 
-    // Profile routes
+    Route::get('/vendor/dashboard', function () {
+        return view('dashboards.vendor');
+    })->middleware('vendor')->name('vendor.dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Google account management
     Route::post('/auth/google/disconnect', [GoogleAuthController::class, 'disconnectGoogle'])->name('auth.google.disconnect');
     Route::get('/auth/google/check', [GoogleAuthController::class, 'checkGoogleLinked'])->name('auth.google.check');
 });
