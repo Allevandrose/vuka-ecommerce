@@ -14,6 +14,15 @@
                 </div>
             </div>
 
+            <!-- Vendor Shop Information (vendors only) -->
+            @if (auth()->user()->isVendor())
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-2xl">
+                        @include('profile.partials.vendor-shop-information')
+                    </div>
+                </div>
+            @endif
+
             <!-- Google Account -->
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
