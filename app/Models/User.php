@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
@@ -28,6 +29,8 @@ class User extends Authenticatable
         'shop_latitude',
         'shop_longitude',
         'vendor_notes',
+        // Product/vendor limit
+        'product_limit',
     ];
 
     protected $hidden = [
@@ -46,6 +49,7 @@ class User extends Authenticatable
             'is_weekend_override' => 'boolean',
             'shop_latitude' => 'decimal:7',
             'shop_longitude' => 'decimal:7',
+            'product_limit' => 'integer',
         ];
     }
 
@@ -252,5 +256,52 @@ class User extends Authenticatable
         $this->is_weekend_override = !$this->is_weekend_override;
         $this->save();
         $this->clearAccessCache();
+    }
+
+    // ============================================
+    // PRODUCTS
+    // ============================================
+
+    /**
+     * Products where this user is the source (vendor or admin owner).
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'source_id');
+    }
+
+    /**
+     * The effective product cap for this user.
+     * Priority: user-level limit → site-wide default from settings → 100.
+     */
+    public function productLimit(): int
+    {
+        if ($this->product_limit !== null) {
+            return $this->product_limit;
+        }
+
+        return (int) Setting::get('vendor_product_cap', 100);
+    }
+
+    /**
+     * How many products has this user created?
+     * Soft-deleted products do not count.
+     */
+    public function productCount(): int
+    {
+        return $this->products()->count();
+    }
+
+    /**
+     * Can this user create another product?
+     */
+    public function canCreateProduct(): bool
+    {
+        // Only vendors are capped. Admins are unlimited.
+        if (!$this->isVendor()) {
+            return true;
+        }
+
+        return $this->productCount() < $this->productLimit();
     }
 }

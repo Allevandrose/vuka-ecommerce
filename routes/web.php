@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\AttributeController;
+use App\Http\Controllers\Admin\AttributeJsonController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StaffManagementController;
 use App\Http\Controllers\Admin\StaffRegistrationController;
 use App\Http\Controllers\Admin\VendorManagementController;
@@ -32,12 +37,10 @@ Route::prefix('auth/google')->name('auth.google.')->group(function () {
 // PUBLIC VENDOR APPLICATION
 // ============================================
 Route::prefix('vendor')->name('vendor.')->group(function () {
-    // Public application
     Route::get('/apply', [VendorApplicationController::class, 'create'])->name('apply');
     Route::post('/apply', [VendorApplicationController::class, 'store'])->name('apply.store');
     Route::get('/apply/pending', [VendorApplicationController::class, 'pending'])->name('apply.pending');
 
-    // Invite-only registration (token in query string)
     Route::get('/register', [VendorRegistrationController::class, 'showRegistrationForm'])->name('register.form');
     Route::post('/register', [VendorRegistrationController::class, 'register'])->name('register');
 });
@@ -53,6 +56,68 @@ Route::get('/staff/pending', [StaffRegistrationController::class, 'pending'])
     ->name('staff.registration.pending');
 Route::get('/account/inactive', [StaffRegistrationController::class, 'inactive'])
     ->name('account.inactive');
+
+// ============================================
+// ADMIN — CATEGORIES
+// ============================================
+Route::middleware(['auth', 'admin'])->prefix('admin/categories')->name('admin.categories.')->group(function () {
+    Route::get('/', [CategoryController::class, 'index'])->name('index');
+    Route::get('/create', [CategoryController::class, 'create'])->name('create');
+    Route::post('/', [CategoryController::class, 'store'])->name('store');
+    Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('edit');
+    Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
+    Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
+});
+
+// ============================================
+// ADMIN — BRANDS
+// ============================================
+Route::middleware(['auth', 'admin'])->prefix('admin/brands')->name('admin.brands.')->group(function () {
+    Route::get('/', [BrandController::class, 'index'])->name('index');
+    Route::get('/create', [BrandController::class, 'create'])->name('create');
+    Route::post('/', [BrandController::class, 'store'])->name('store');
+    Route::get('/{brand}/edit', [BrandController::class, 'edit'])->name('edit');
+    Route::put('/{brand}', [BrandController::class, 'update'])->name('update');
+    Route::delete('/{brand}', [BrandController::class, 'destroy'])->name('destroy');
+});
+
+// ============================================
+// ADMIN — ATTRIBUTES
+// ============================================
+Route::middleware(['auth', 'admin'])->prefix('admin/attributes')->name('admin.attributes.')->group(function () {
+    // JSON endpoint — must be declared BEFORE the {attribute} wildcard routes
+    Route::get('/json', [AttributeJsonController::class, 'forCategory'])->name('json');
+
+    Route::get('/', [AttributeController::class, 'index'])->name('index');
+    Route::get('/create', [AttributeController::class, 'create'])->name('create');
+    Route::post('/', [AttributeController::class, 'store'])->name('store');
+    Route::get('/{attribute}/edit', [AttributeController::class, 'edit'])->name('edit');
+    Route::put('/{attribute}', [AttributeController::class, 'update'])->name('update');
+    Route::delete('/{attribute}', [AttributeController::class, 'destroy'])->name('destroy');
+});
+
+// ============================================
+// ADMIN — PRODUCTS
+// ============================================
+Route::middleware(['auth', 'admin'])->prefix('admin/products')->name('admin.products.')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('index');
+    Route::get('/create', [ProductController::class, 'create'])->name('create');
+    Route::post('/', [ProductController::class, 'store'])->name('store');
+
+    // Workflow actions — declared BEFORE {product} wildcards
+    Route::post('/{product}/approve', [ProductController::class, 'approve'])->name('approve');
+    Route::post('/{product}/reject', [ProductController::class, 'reject'])->name('reject');
+    Route::post('/{product}/disable', [ProductController::class, 'disable'])->name('disable');
+    Route::post('/{product}/enable', [ProductController::class, 'enable'])->name('enable');
+    Route::post('/{product}/toggle-featured', [ProductController::class, 'toggleFeatured'])->name('toggleFeatured');
+    Route::post('/{product}/archive', [ProductController::class, 'archive'])->name('archive');
+
+    // CRUD resource (show/edit/update/destroy)
+    Route::get('/{product}', [ProductController::class, 'show'])->name('show');
+    Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
+    Route::put('/{product}', [ProductController::class, 'update'])->name('update');
+    Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+});
 
 // ============================================
 // ADMIN STAFF MANAGEMENT
@@ -78,7 +143,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin/vendors')->name('admin.vendo
     Route::post('/{application}/approve', [VendorManagementController::class, 'approve'])->name('approve');
     Route::post('/{application}/reject', [VendorManagementController::class, 'reject'])->name('reject');
 
-    // Vendor user actions (uses user id, not application)
     Route::post('/user/{user}/activate', [VendorManagementController::class, 'activate'])->name('user.activate');
     Route::post('/user/{user}/deactivate', [VendorManagementController::class, 'deactivate'])->name('user.deactivate');
     Route::delete('/user/{user}', [VendorManagementController::class, 'destroy'])->name('user.destroy');

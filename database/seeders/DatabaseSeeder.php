@@ -140,5 +140,17 @@ class DatabaseSeeder extends Seeder
         // ADDITIONAL RANDOM USERS (Customers only)
         // ============================================
         User::factory(10)->create();
+
+        // ============================================
+        // PRODUCT SECTION SEEDERS
+        // Order matters — attributes depend on categories.
+        // Sub-seeders live in the same namespace, so no imports needed.
+        // ============================================
+        $this->call([
+            CategorySeeder::class,
+            BrandSeeder::class,
+            AttributeSeeder::class,
+            SettingSeeder::class,
+        ]);
     }
 }
