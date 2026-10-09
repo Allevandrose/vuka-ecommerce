@@ -175,9 +175,11 @@
                                             <div class="flex items-center gap-3">
                                                 <div class="shrink-0 w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">
                                                     @if ($product->thumbnail)
-                                                        <img src="{{ Storage::disk('public')->url($product->thumbnail) }}"
+                                                        <img src="{{ asset('storage/' . $product->thumbnail) }}"
                                                             alt="{{ $product->name }}"
-                                                            class="w-full h-full object-cover">
+                                                            class="w-full h-full object-cover"
+                                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                                        <i class="fas fa-image text-gray-300" style="display:none;"></i>
                                                     @else
                                                         <i class="fas fa-image text-gray-300"></i>
                                                     @endif

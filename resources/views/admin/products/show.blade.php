@@ -118,9 +118,10 @@
                                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     @foreach ($product->sortedImages() as $img)
                                         <div class="relative group rounded-lg overflow-hidden border-2 {{ ($product->primary_image ?? '') === ($img['path'] ?? '') ? 'border-indigo-500' : 'border-gray-200' }}">
-                                            <img src="{{ Storage::disk('public')->url($img['path']) }}"
+                                            <img src="{{ asset('storage/' . $img['path']) }}"
                                                 alt="{{ $img['alt'] ?? $product->name }}"
-                                                class="w-full h-40 object-cover">
+                                                class="w-full h-40 object-cover"
+                                                onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><rect width=%22200%22 height=%22200%22 fill=%22%23f3f4f6%22/><text x=%22100%22 y=%22105%22 text-anchor=%22middle%22 font-size=%2214%22 fill=%22%239ca3af%22 font-family=%22sans-serif%22>Image not found</text></svg>';">
                                             @if (($product->primary_image ?? '') === ($img['path'] ?? ''))
                                                 <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-600 text-white">
                                                     <i class="fas fa-star text-[9px] mr-0.5"></i> Primary
@@ -185,7 +186,6 @@
                                         @endif
                                     @endforeach
 
-                                    {{-- Attributes not in current definitions (orphaned keys) --}}
                                     @foreach ($productAttrs as $key => $value)
                                         @if (!$attributeDefinitions->contains('key', $key))
                                             <div>
@@ -206,7 +206,7 @@
                         </div>
                     </div>
 
-                    {{-- Reviews & Complaints (summary counts only — full management later) --}}
+                    {{-- Reviews & Complaints --}}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
@@ -288,15 +288,6 @@
                                     </span>
                                 @endif
                             </div>
-
-                            @if ($product->is_visible)
-                                <a href="#" target="_blank"
-                                    class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                                    <i class="fas fa-external-link-alt text-[10px]"></i>
-                                    View on site
-                                    <span class="text-gray-400 italic">(public page not built yet)</span>
-                                </a>
-                            @endif
                         </div>
                     </div>
 
@@ -415,7 +406,7 @@
                         </div>
                     </div>
 
-                    {{-- Category & Brand --}}
+                    {{-- Classification --}}
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 space-y-3">
                             <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
@@ -453,7 +444,6 @@
                                 <i class="fas fa-sliders-h text-gray-400"></i> Actions
                             </h3>
 
-                            {{-- Toggle featured --}}
                             <form method="POST" action="{{ route('admin.products.toggleFeatured', $product) }}">
                                 @csrf
                                 <button type="submit"
@@ -464,7 +454,6 @@
                                 </button>
                             </form>
 
-                            {{-- Enable/Disable --}}
                             @if ($product->status === 'disabled')
                                 <form method="POST" action="{{ route('admin.products.enable', $product) }}">
                                     @csrf
@@ -483,7 +472,6 @@
                                 </button>
                             @endif
 
-                            {{-- Archive --}}
                             @if ($product->status !== 'archived')
                                 <form method="POST" action="{{ route('admin.products.archive', $product) }}"
                                     onsubmit="return confirm('Archive this product? It will be hidden from public but not deleted.')">
@@ -496,7 +484,6 @@
                                 </form>
                             @endif
 
-                            {{-- Delete --}}
                             <form method="POST" action="{{ route('admin.products.destroy', $product) }}"
                                 onsubmit="return confirm('Delete &quot;{{ addslashes($product->name) }}&quot;? This soft-deletes it and removes image files.')">
                                 @csrf

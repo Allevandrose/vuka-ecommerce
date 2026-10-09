@@ -34,7 +34,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    {{-- LEFT: MAIN FORM --}}
+                    {{-- LEFT --}}
                     <div class="lg:col-span-2 space-y-6">
 
                         {{-- BASIC INFO --}}
@@ -70,9 +70,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="condition" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Condition
-                                        </label>
+                                        <label for="condition" class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
                                         <select id="condition" name="condition"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             <option value="new" {{ old('condition', 'new') === 'new' ? 'selected' : '' }}>New</option>
@@ -91,9 +89,7 @@
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Full Description
-                                        </label>
+                                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
                                         <textarea id="description" name="description" rows="6"
                                             placeholder="Rich product description. HTML allowed."
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm">{{ old('description') }}</textarea>
@@ -128,9 +124,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Brand
-                                        </label>
+                                        <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
                                         <select id="brand_id" name="brand_id"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             <option value="">— No brand —</option>
@@ -145,7 +139,7 @@
                             </div>
                         </div>
 
-                        {{-- PRICING & INVENTORY --}}
+                        {{-- PRICING --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 space-y-5">
                                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
@@ -164,9 +158,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="compare_at_price" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Compare-at Price
-                                        </label>
+                                        <label for="compare_at_price" class="block text-sm font-medium text-gray-700 mb-1">Compare-at Price</label>
                                         <input id="compare_at_price" name="compare_at_price" type="number" step="0.01" min="0"
                                             value="{{ old('compare_at_price') }}"
                                             placeholder="0.00"
@@ -184,18 +176,14 @@
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label for="stock_quantity" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Stock Quantity
-                                        </label>
+                                        <label for="stock_quantity" class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
                                         <input id="stock_quantity" name="stock_quantity" type="number" min="0"
                                             value="{{ old('stock_quantity', 0) }}"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     </div>
 
                                     <div>
-                                        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Currency
-                                        </label>
+                                        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                                         <select id="currency" name="currency"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             <option value="KES" {{ old('currency', 'KES') === 'KES' ? 'selected' : '' }}>KES</option>
@@ -285,7 +273,7 @@
                             </div>
                         </div>
 
-                        {{-- DYNAMIC ATTRIBUTES --}}
+                        {{-- ATTRIBUTES --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 space-y-5">
                                 <div class="flex items-center justify-between">
@@ -399,7 +387,7 @@
                                     <input type="file"
                                         id="image_files"
                                         name="image_files[]"
-                                        accept="image/jpeg,image/png,image/webp"
+                                        accept="image/jpeg,image/jfif,image/png,image/webp"
                                         multiple
                                         class="block w-full text-sm text-gray-600
                                             file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
@@ -449,7 +437,7 @@
 
                     </div>
 
-                    {{-- RIGHT: SIDEBAR --}}
+                    {{-- RIGHT --}}
                     <div class="lg:col-span-1 space-y-6">
 
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -459,9 +447,7 @@
                                 </h3>
 
                                 <div>
-                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Status
-                                    </label>
+                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                     <select id="status" name="status"
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                         <option value="draft" {{ old('status', 'draft') === 'draft' ? 'selected' : '' }}>

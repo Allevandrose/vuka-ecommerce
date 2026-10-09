@@ -74,7 +74,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    {{-- LEFT: MAIN FORM --}}
+                    {{-- LEFT --}}
                     <div class="lg:col-span-2 space-y-6">
 
                         {{-- BASIC INFO --}}
@@ -99,18 +99,14 @@
                                     </div>
 
                                     <div>
-                                        <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">
-                                            SKU
-                                        </label>
+                                        <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
                                         <input id="sku" name="sku" type="text"
                                             value="{{ old('sku', $product->sku) }}"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm">
                                     </div>
 
                                     <div>
-                                        <label for="condition" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Condition
-                                        </label>
+                                        <label for="condition" class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
                                         <select id="condition" name="condition"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             @foreach (['new', 'used', 'refurbished'] as $c)
@@ -122,17 +118,13 @@
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label for="short_description" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Short Description
-                                        </label>
+                                        <label for="short_description" class="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
                                         <textarea id="short_description" name="short_description" rows="2" maxlength="500"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('short_description', $product->short_description) }}</textarea>
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Full Description
-                                        </label>
+                                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
                                         <textarea id="description" name="description" rows="6"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm">{{ old('description', $product->description) }}</textarea>
                                     </div>
@@ -166,9 +158,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Brand
-                                        </label>
+                                        <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
                                         <select id="brand_id" name="brand_id"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             <option value="">— No brand —</option>
@@ -183,7 +173,7 @@
                             </div>
                         </div>
 
-                        {{-- PRICING & INVENTORY --}}
+                        {{-- PRICING --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 space-y-5">
                                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
@@ -201,9 +191,7 @@
                                     </div>
 
                                     <div>
-                                        <label for="compare_at_price" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Compare-at Price
-                                        </label>
+                                        <label for="compare_at_price" class="block text-sm font-medium text-gray-700 mb-1">Compare-at Price</label>
                                         <input id="compare_at_price" name="compare_at_price" type="number" step="0.01" min="0"
                                             value="{{ old('compare_at_price', $product->compare_at_price) }}"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -219,18 +207,14 @@
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label for="stock_quantity" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Stock Quantity
-                                        </label>
+                                        <label for="stock_quantity" class="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
                                         <input id="stock_quantity" name="stock_quantity" type="number" min="0"
                                             value="{{ old('stock_quantity', $product->stock_quantity) }}"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     </div>
 
                                     <div>
-                                        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Currency
-                                        </label>
+                                        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                                         <select id="currency" name="currency"
                                             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             @foreach (['KES', 'USD', 'EUR', 'GBP'] as $c)
@@ -308,9 +292,7 @@
                                 </div>
 
                                 <div>
-                                    <label for="lead_time_days" class="block text-xs font-medium text-gray-700 mb-1">
-                                        Lead time (days)
-                                    </label>
+                                    <label for="lead_time_days" class="block text-xs font-medium text-gray-700 mb-1">Lead time (days)</label>
                                     <input id="lead_time_days" name="lead_time_days" type="number" min="0" max="365"
                                         value="{{ old('lead_time_days', $product->lead_time_days) }}"
                                         class="w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
@@ -318,7 +300,7 @@
                             </div>
                         </div>
 
-                        {{-- DYNAMIC ATTRIBUTES --}}
+                        {{-- ATTRIBUTES --}}
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 space-y-5">
                                 <div class="flex items-center justify-between">
@@ -345,7 +327,6 @@
                                                 <span x-show="attr.unit" class="text-gray-400 text-xs" x-text="'(' + attr.unit + ')'"></span>
                                             </label>
 
-                                            {{-- text --}}
                                             <template x-if="attr.type === 'text'">
                                                 <input :id="'attr_' + attr.key"
                                                     :name="'attributes[' + attr.key + ']'"
@@ -354,7 +335,6 @@
                                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             </template>
 
-                                            {{-- textarea --}}
                                             <template x-if="attr.type === 'textarea'">
                                                 <textarea :id="'attr_' + attr.key"
                                                     :name="'attributes[' + attr.key + ']'"
@@ -363,7 +343,6 @@
                                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                                             </template>
 
-                                            {{-- number --}}
                                             <template x-if="attr.type === 'number'">
                                                 <input :id="'attr_' + attr.key"
                                                     :name="'attributes[' + attr.key + ']'"
@@ -372,7 +351,6 @@
                                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                             </template>
 
-                                            {{-- select --}}
                                             <template x-if="attr.type === 'select'">
                                                 <select :id="'attr_' + attr.key"
                                                     :name="'attributes[' + attr.key + ']'"
@@ -386,7 +364,6 @@
                                                 </select>
                                             </template>
 
-                                            {{-- multiselect --}}
                                             <template x-if="attr.type === 'multiselect'">
                                                 <div class="flex flex-wrap gap-2 p-2 border border-gray-200 rounded-md">
                                                     <template x-for="opt in attr.options" :key="opt">
@@ -402,7 +379,6 @@
                                                 </div>
                                             </template>
 
-                                            {{-- boolean --}}
                                             <template x-if="attr.type === 'boolean'">
                                                 <div class="flex items-center gap-4 pt-1">
                                                     <label class="flex items-center gap-2 cursor-pointer">
@@ -434,7 +410,6 @@
                                     Add new images below.
                                 </p>
 
-                                {{-- Existing images --}}
                                 @if (!empty($product->images))
                                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <template x-for="(img, originalIdx) in existingImages" :key="'img-' + originalIdx">
@@ -447,29 +422,26 @@
                                                     :alt="img.alt || 'Product image'"
                                                     class="w-full h-32 object-cover">
 
-                                                {{-- Remove / restore --}}
                                                 <button type="button"
-                                                    @click="removeExisting(originalIdx)"
+                                                    x-on:click="removeExisting(originalIdx)"
                                                     :class="img.removed ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'"
-                                                    class="absolute top-1 right-1 w-7 h-7 rounded-full text-white flex items-center justify-center shadow-md"
+                                                    class="absolute top-1 right-1 w-7 h-7 rounded-full text-white flex items-center justify-center shadow-md z-10"
                                                     :title="img.removed ? 'Restore image' : 'Remove image'">
                                                     <i class="fas text-[11px]"
                                                         :class="img.removed ? 'fa-undo' : 'fa-trash'"></i>
                                                 </button>
 
-                                                {{-- Primary toggle (only when not removed) --}}
                                                 <button type="button"
                                                     x-show="!img.removed"
-                                                    @click="setPrimary('existing', originalIdx)"
+                                                    x-on:click="setPrimary('existing', originalIdx)"
                                                     :class="isPrimary('existing', originalIdx) ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700'"
-                                                    class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm">
+                                                    class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm z-10">
                                                     <i class="fas fa-star text-[9px] mr-0.5"></i>
                                                     <span x-text="isPrimary('existing', originalIdx) ? 'Primary' : 'Set primary'"></span>
                                                 </button>
 
-                                                {{-- Removed badge --}}
                                                 <div x-show="img.removed" x-cloak
-                                                    class="absolute inset-0 flex items-center justify-center">
+                                                    class="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                     <span class="px-2 py-1 rounded bg-red-600 text-white text-[10px] font-semibold uppercase tracking-wide">
                                                         Will be removed
                                                     </span>
@@ -478,7 +450,6 @@
                                         </template>
                                     </div>
 
-                                    {{-- Hidden inputs: kept existing images --}}
                                     <template x-for="(img, originalIdx) in existingImages" :key="'kept-' + originalIdx">
                                         <template x-if="!img.removed">
                                             <input type="hidden" name="kept_image_indices[]" :value="originalIdx">
@@ -490,10 +461,8 @@
                                     </div>
                                 @endif
 
-                                {{-- Hidden input: primary index into merged list --}}
                                 <input type="hidden" name="primary_image_index" :value="primaryMergedIndex()">
 
-                                {{-- Upload new --}}
                                 <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
                                     <input type="file"
                                         id="image_files"
@@ -501,7 +470,7 @@
                                         accept="image/jpeg,image/jfif,image/png,image/webp"
                                         multiple
                                         x-ref="newFilesInput"
-                                        @change="onNewFilesSelected($event)"
+                                        x-on:change="onNewFilesSelected($event)"
                                         class="block w-full text-sm text-gray-600
                                             file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
                                             file:text-sm file:font-semibold file:bg-[#1E3C2C] file:text-white
@@ -510,7 +479,6 @@
                                         New images append to the list · JPG/PNG/WebP · max 5MB each
                                     </p>
 
-                                    {{-- New uploads preview --}}
                                     <div x-show="newFiles.length > 0" x-cloak class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                                         <template x-for="(file, idx) in newFiles" :key="'new-' + idx">
                                             <div class="relative group rounded-lg overflow-hidden border-2"
@@ -518,11 +486,10 @@
 
                                                 <img :src="file.url" :alt="file.name" class="w-full h-32 object-cover">
 
-                                                {{-- Primary toggle --}}
                                                 <button type="button"
-                                                    @click="setPrimary('new', idx)"
+                                                    x-on:click="setPrimary('new', idx)"
                                                     :class="isPrimary('new', idx) ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700'"
-                                                    class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm">
+                                                    class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm z-10">
                                                     <i class="fas fa-star text-[9px] mr-0.5"></i>
                                                     <span x-text="isPrimary('new', idx) ? 'Primary' : 'Set primary'"></span>
                                                 </button>
@@ -567,7 +534,7 @@
 
                     </div>
 
-                    {{-- RIGHT: SIDEBAR --}}
+                    {{-- RIGHT --}}
                     <div class="lg:col-span-1 space-y-6">
 
                         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -589,9 +556,7 @@
                                 @endif
 
                                 <div>
-                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Status
-                                    </label>
+                                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                                     <select id="status" name="status"
                                         class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                         @foreach (['draft' => 'Draft', 'active' => 'Active', 'archived' => 'Archived'] as $val => $label)
@@ -667,23 +632,18 @@
                 attributesLoading: false,
                 submitting: false,
 
-                // Existing attribute values
                 attrValues: @json($product->attributes ?? []),
 
-                // Existing images (with removable flag)
                 existingImages: @json($product->images ?? []).map(img => ({
                     ...img,
                     removed: false,
                 })),
 
-                // New files staged for upload
                 newFiles: [],
 
-                // Primary: either { kind: 'existing', index: N } or { kind: 'new', index: N }
                 primary: null,
 
                 init() {
-                    // Set the initial primary from the product's primary_image path
                     @if (!empty($product->primary_image))
                         const primaryPath = @json($product->primary_image);
                         const idx = this.existingImages.findIndex(img => img.path === primaryPath);
@@ -701,19 +661,21 @@
                     }
                 },
 
-                // Toggle removal of an existing image
                 removeExisting(idx) {
-                    const img = this.existingImages[idx];
-                    if (!img) return;
-                    img.removed = !img.removed;
+                    const current = this.existingImages[idx];
+                    if (!current) return;
 
-                    // If we removed the primary, pick a new primary
-                    if (img.removed && this.primary?.kind === 'existing' && this.primary.index === idx) {
+                    const willBeRemoved = !current.removed;
+
+                    this.existingImages = this.existingImages.map((item, i) =>
+                        i === idx ? { ...item, removed: willBeRemoved } : item
+                    );
+
+                    if (willBeRemoved && this.primary?.kind === 'existing' && this.primary.index === idx) {
                         this.primary = this.firstAvailablePrimary();
                     }
 
-                    // If we restored an image and there's no primary, set it
-                    if (!img.removed && !this.primary) {
+                    if (!willBeRemoved && !this.primary) {
                         this.primary = { kind: 'existing', index: idx };
                     }
                 },
@@ -748,17 +710,13 @@
                         });
                     }
 
-                    // If we didn't have a primary yet, set to first new file
                     if (!this.primary && this.newFiles.length > 0) {
                         this.primary = { kind: 'new', index: 0 };
                     }
 
-                    // Reset the input so the same file can be re-selected if removed
                     event.target.value = '';
                 },
 
-                // Compute the primary image index into the merged list:
-                // [kept existing (in original order)] + [new uploads (in selection order)]
                 primaryMergedIndex() {
                     if (!this.primary) return 0;
 
