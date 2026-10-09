@@ -20,7 +20,6 @@
         </div>
     </x-slot>
 
-    {{-- NOTE: Alpine calls init() automatically, so x-init="init()" was removed (it ran twice). --}}
     <div class="py-12" x-data="productEditForm()">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
@@ -411,7 +410,7 @@
                                     Add new images below.
                                 </p>
 
-                                {{-- Marker so the controller can tell "all images removed" from "field not submitted" --}}
+                                {{-- Marker so the controller knows the images section was rendered --}}
                                 <input type="hidden" name="images_submitted" value="1">
 
                                 {{-- Existing images --}}
@@ -637,18 +636,29 @@
 
     <script>
         function productEditForm() {
-            // Normalise images: accept an array of objects, an array of path strings,
-            // or a JSON string, and always return [{ path, alt, ..., removed: false }].
+            /**
+             * Normalise the incoming images payload into a clean array of
+             * { path, alt, sort, removed: false } objects. Also DEDUPLICATES
+             * by path so historical duplicates collapse to one entry in the UI.
+             */
             const normaliseImages = (raw) => {
                 if (typeof raw === 'string') {
                     try { raw = JSON.parse(raw); } catch (e) { raw = []; }
                 }
                 if (!Array.isArray(raw)) raw = Object.values(raw || {});
 
-                return raw
-                    .filter(Boolean)
-                    .map(img => (typeof img === 'string' ? { path: img } : { ...img }))
-                    .map(img => ({ ...img, removed: false }));
+                const seenPaths = new Set();
+                const cleaned = [];
+
+                for (const img of raw) {
+                    if (!img) continue;
+                    const obj = (typeof img === 'string') ? { path: img } : { ...img };
+                    if (!obj.path || seenPaths.has(obj.path)) continue;
+                    seenPaths.add(obj.path);
+                    cleaned.push({ ...obj, removed: false });
+                }
+
+                return cleaned;
             };
 
             let fileCounter = 0;
@@ -667,7 +677,6 @@
 
                 primary: null,
 
-                // Alpine calls init() automatically
                 init() {
                     @if (!empty($product->primary_image))
                         const primaryPath = @json($product->primary_image);
@@ -692,7 +701,7 @@
                     const current = this.existingImages[idx];
                     if (!current) return;
 
-                    // Mutate in place (reactive) instead of replacing the array/objects.
+                    // Toggle removal flag in place for Alpine reactivity.
                     current.removed = !current.removed;
 
                     if (current.removed && this.primary?.kind === 'existing' && this.primary.index === idx) {
@@ -772,8 +781,6 @@
                         this.primary = { kind: 'new', index: 0 };
                     }
 
-                    // Keep the real <input> in sync with ALL selected files so they are
-                    // actually submitted with the form (previously the input was cleared).
                     this.syncFileInput();
                 },
 

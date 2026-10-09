@@ -19,7 +19,7 @@ use Illuminate\View\View;
 class ProductController extends Controller
 {
     // ============================================
-    // INDEX — list all products (admin + vendor owned)
+    // INDEX
     // ============================================
 
     public function index(Request $request): View
@@ -49,7 +49,7 @@ class ProductController extends Controller
         }
 
         if ($status = $request->input('status')) {
-            if (in_array($status, ['draft', 'pending_review', 'active', 'rejected', 'disabled', 'archived'], true)) {
+            if (in_array($status, ['draft', 'active', 'pending_review', 'rejected', 'disabled', 'archived'], true)) {
                 $query->where('status', $status);
             }
         }
@@ -127,7 +127,12 @@ class ProductController extends Controller
             $validated['primary_image'] = $imagesData['primary_image'];
             $validated['thumbnail'] = $imagesData['thumbnail'];
 
-            unset($validated['image_files'], $validated['primary_image_index']);
+            unset(
+                $validated['image_files'],
+                $validated['primary_image_index'],
+                $validated['images_submitted'],
+                $validated['kept_image_indices']
+            );
 
             $product = Product::create($validated);
 
@@ -210,7 +215,12 @@ class ProductController extends Controller
                 $validated['thumbnail'] = $mergedImages['thumbnail'];
             }
 
-            unset($validated['image_files'], $validated['primary_image_index'], $validated['kept_image_indices']);
+            unset(
+                $validated['image_files'],
+                $validated['primary_image_index'],
+                $validated['kept_image_indices'],
+                $validated['images_submitted']
+            );
 
             $product->update($validated);
 
@@ -385,6 +395,9 @@ class ProductController extends Controller
             'image_files' => ['nullable', 'array', 'max:8'],
             'image_files.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'primary_image_index' => ['nullable', 'integer', 'min:0', 'max:7'],
+            'images_submitted' => ['nullable', 'boolean'],
+            'kept_image_indices' => ['nullable', 'array'],
+            'kept_image_indices.*' => ['integer', 'min:0'],
 
             'attributes' => ['nullable', 'array'],
         ];
@@ -476,7 +489,7 @@ class ProductController extends Controller
     }
 
     // ============================================
-    // HELPERS — images
+    // HELPERS — image uploads (create)
     // ============================================
 
     protected function handleImageUploads(Request $request): array
@@ -486,6 +499,7 @@ class ProductController extends Controller
 
         $images = [];
         $primaryPath = null;
+        $seenPaths = [];
 
         foreach ($files as $i => $file) {
             if (!$file || !$file->isValid()) {
@@ -496,10 +510,16 @@ class ProductController extends Controller
             $filename = Str::uuid() . '.' . strtolower($extension);
             $path = $file->storeAs('products', $filename, 'public');
 
+            // Skip duplicates within this batch
+            if (isset($seenPaths[$path])) {
+                continue;
+            }
+            $seenPaths[$path] = true;
+
             $images[] = [
                 'path' => $path,
                 'alt' => $request->input("image_alts.{$i}") ?: null,
-                'sort' => $i,
+                'sort' => count($images),
             ];
 
             if ($i === $primaryIndex && !$primaryPath) {
@@ -518,6 +538,108 @@ class ProductController extends Controller
         ];
     }
 
+    // ============================================
+    // HELPERS — image merge (update)
+    // ============================================
+
+    /**
+     * Reconcile the product's existing images with the submitted form state.
+     *
+     * Contract:
+     *   - `images_submitted=1` is sent ONLY by the edit form's images section.
+     *     If absent, we leave the product's images untouched (return null).
+     *   - `kept_image_indices[]` lists the indices (into the product's OLD
+     *     images array) that the admin chose to keep.
+     *   - `image_files[]` are new files to append.
+     *   - `primary_image_index` is the index in the MERGED array
+     *     (kept existing first, then new uploads) that should be the primary.
+     *
+     * Safety:
+     *   - Deduplicates by path (kills any historical duplicates in the DB).
+     *   - Skips duplicated uploads within the same request.
+     *   - Deletes files on disk that are no longer referenced.
+     */
+    protected function mergeImageState(Request $request, Product $product): ?array
+    {
+        // Explicit "the images section was submitted" flag.
+        if (!$request->boolean('images_submitted')) {
+            return null;
+        }
+
+        $oldImages = $product->images ?? [];
+
+        // Normalise kept indices: integers, deduped, validated against old array.
+        $keptIndices = collect($request->input('kept_image_indices', []))
+            ->map(fn($i) => (int) $i)
+            ->filter(fn($i) => isset($oldImages[$i]))
+            ->unique()
+            ->values()
+            ->all();
+
+        // Build the kept list, deduplicating by path.
+        $kept = [];
+        $seenPaths = [];
+        foreach ($keptIndices as $idx) {
+            $path = $oldImages[$idx]['path'] ?? null;
+            if (!$path || isset($seenPaths[$path])) {
+                continue;
+            }
+            $seenPaths[$path] = true;
+            $kept[] = $oldImages[$idx];
+        }
+
+        // Upload new files, skipping any that collide with an already-kept path.
+        $uploaded = [];
+        $newFiles = $request->file('image_files') ?? [];
+
+        foreach ($newFiles as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+
+            $extension = $file->getClientOriginalExtension() ?: 'jpg';
+            $filename = Str::uuid() . '.' . strtolower($extension);
+            $path = $file->storeAs('products', $filename, 'public');
+
+            if (isset($seenPaths[$path])) {
+                // Collision with an already-kept path — skip.
+                continue;
+            }
+            $seenPaths[$path] = true;
+
+            $uploaded[] = [
+                'path' => $path,
+                'alt' => null,
+                'sort' => 0,
+            ];
+        }
+
+        // Merge and reindex sort.
+        $merged = array_values(array_merge($kept, $uploaded));
+        foreach ($merged as $i => $img) {
+            $merged[$i]['sort'] = $i;
+        }
+
+        // Primary.
+        $primaryIndex = $request->input('primary_image_index');
+        $primaryPath = null;
+
+        if ($primaryIndex !== null && isset($merged[(int) $primaryIndex])) {
+            $primaryPath = $merged[(int) $primaryIndex]['path'];
+        } elseif (!empty($merged)) {
+            $primaryPath = $merged[0]['path'];
+        }
+
+        // Delete files no longer referenced.
+        $this->deleteOrphanedImages($oldImages, $merged);
+
+        return [
+            'images' => $merged,
+            'primary_image' => $primaryPath,
+            'thumbnail' => $primaryPath,
+        ];
+    }
+
     protected function deleteOrphanedImages(?array $oldImages, array $newImages): void
     {
         $oldPaths = collect($oldImages ?? [])->pluck('path')->filter()->all();
@@ -530,63 +652,6 @@ class ProductController extends Controller
                 Storage::disk('public')->delete($path);
             }
         }
-    }
-
-    protected function mergeImageState(Request $request, Product $product): ?array
-    {
-        $oldImages = $product->images ?? [];
-        $keptIndices = $request->input('kept_image_indices', []);
-        $newFiles = $request->file('image_files') ?? [];
-
-        if (empty($newFiles) && !$request->has('kept_image_indices') && !$request->has('image_files')) {
-            return null;
-        }
-
-        $kept = [];
-        foreach ((array) $keptIndices as $idx) {
-            if (isset($oldImages[$idx])) {
-                $kept[] = $oldImages[$idx];
-            }
-        }
-
-        $uploaded = [];
-        foreach ($newFiles as $file) {
-            if (!$file || !$file->isValid()) {
-                continue;
-            }
-            $extension = $file->getClientOriginalExtension() ?: 'jpg';
-            $filename = Str::uuid() . '.' . strtolower($extension);
-            $path = $file->storeAs('products', $filename, 'public');
-            $uploaded[] = [
-                'path' => $path,
-                'alt' => null,
-                'sort' => 0,
-            ];
-        }
-
-        $merged = array_merge($kept, $uploaded);
-
-        $merged = array_map(function ($img, $i) {
-            $img['sort'] = $i;
-            return $img;
-        }, $merged, array_keys($merged));
-
-        $primaryIndex = $request->input('primary_image_index');
-        $primaryPath = null;
-
-        if ($primaryIndex !== null && isset($merged[(int) $primaryIndex])) {
-            $primaryPath = $merged[(int) $primaryIndex]['path'];
-        } elseif (!empty($merged)) {
-            $primaryPath = $merged[0]['path'];
-        }
-
-        $this->deleteOrphanedImages($oldImages, $merged);
-
-        return [
-            'images' => array_values($merged),
-            'primary_image' => $primaryPath,
-            'thumbnail' => $primaryPath,
-        ];
     }
 
     // ============================================
