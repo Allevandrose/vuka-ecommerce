@@ -20,7 +20,8 @@
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="productEditForm()" x-init="init()">
+    {{-- NOTE: Alpine calls init() automatically, so x-init="init()" was removed (it ran twice). --}}
+    <div class="py-12" x-data="productEditForm()">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @if ($errors->any())
@@ -406,60 +407,63 @@
                                 </h3>
 
                                 <p class="text-sm text-gray-500">
-                                    Click the trash icon to remove an image. Click the star to set the primary.
+                                    Click the trash icon to remove an image (click again to restore). Click the star to set the primary.
                                     Add new images below.
                                 </p>
 
-                                @if (!empty($product->images))
-                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        <template x-for="(img, originalIdx) in existingImages" :key="'img-' + originalIdx">
-                                            <div class="relative group rounded-lg overflow-hidden border-2 transition"
-                                                :class="img.removed
-                                                    ? 'border-red-300 opacity-40'
-                                                    : (isPrimary('existing', originalIdx) ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200')">
+                                {{-- Marker so the controller can tell "all images removed" from "field not submitted" --}}
+                                <input type="hidden" name="images_submitted" value="1">
 
-                                                <img :src="'/storage/' + img.path"
-                                                    :alt="img.alt || 'Product image'"
-                                                    class="w-full h-32 object-cover">
+                                {{-- Existing images --}}
+                                <div x-show="existingImages.length > 0" x-cloak class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <template x-for="(img, originalIdx) in existingImages" :key="'img-' + originalIdx">
+                                        <div class="relative group rounded-lg overflow-hidden border-2 transition"
+                                            :class="img.removed
+                                                ? 'border-red-300'
+                                                : (isPrimary('existing', originalIdx) ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200')">
 
-                                                <button type="button"
-                                                    x-on:click="removeExisting(originalIdx)"
-                                                    :class="img.removed ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'"
-                                                    class="absolute top-1 right-1 w-7 h-7 rounded-full text-white flex items-center justify-center shadow-md z-10"
-                                                    :title="img.removed ? 'Restore image' : 'Remove image'">
-                                                    <i class="fas text-[11px]"
-                                                        :class="img.removed ? 'fa-undo' : 'fa-trash'"></i>
-                                                </button>
+                                            <img :src="'/storage/' + img.path"
+                                                :alt="img.alt || 'Product image'"
+                                                class="w-full h-32 object-cover transition"
+                                                :class="img.removed ? 'opacity-40' : ''">
 
-                                                <button type="button"
-                                                    x-show="!img.removed"
-                                                    x-on:click="setPrimary('existing', originalIdx)"
-                                                    :class="isPrimary('existing', originalIdx) ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700'"
-                                                    class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm z-10">
-                                                    <i class="fas fa-star text-[9px] mr-0.5"></i>
-                                                    <span x-text="isPrimary('existing', originalIdx) ? 'Primary' : 'Set primary'"></span>
-                                                </button>
+                                            <button type="button"
+                                                @click.prevent.stop="removeExisting(originalIdx)"
+                                                :class="img.removed ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'"
+                                                class="absolute top-1 right-1 w-7 h-7 rounded-full text-white flex items-center justify-center shadow-md z-10"
+                                                :title="img.removed ? 'Restore image' : 'Remove image'">
+                                                <i class="fas text-[11px]"
+                                                    :class="img.removed ? 'fa-undo' : 'fa-trash'"></i>
+                                            </button>
 
-                                                <div x-show="img.removed" x-cloak
-                                                    class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                    <span class="px-2 py-1 rounded bg-red-600 text-white text-[10px] font-semibold uppercase tracking-wide">
-                                                        Will be removed
-                                                    </span>
-                                                </div>
+                                            <button type="button"
+                                                x-show="!img.removed"
+                                                @click.prevent.stop="setPrimary('existing', originalIdx)"
+                                                :class="isPrimary('existing', originalIdx) ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700'"
+                                                class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm z-10">
+                                                <i class="fas fa-star text-[9px] mr-0.5"></i>
+                                                <span x-text="isPrimary('existing', originalIdx) ? 'Primary' : 'Set primary'"></span>
+                                            </button>
+
+                                            <div x-show="img.removed" x-cloak
+                                                class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <span class="px-2 py-1 rounded bg-red-600 text-white text-[10px] font-semibold uppercase tracking-wide">
+                                                    Will be removed
+                                                </span>
                                             </div>
-                                        </template>
-                                    </div>
-
-                                    <template x-for="(img, originalIdx) in existingImages" :key="'kept-' + originalIdx">
-                                        <template x-if="!img.removed">
-                                            <input type="hidden" name="kept_image_indices[]" :value="originalIdx">
-                                        </template>
+                                        </div>
                                     </template>
-                                @else
-                                    <div class="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                        No images yet. Upload below.
-                                    </div>
-                                @endif
+                                </div>
+
+                                <div x-show="existingImages.length === 0 && newFiles.length === 0" x-cloak
+                                    class="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    No images yet. Upload below.
+                                </div>
+
+                                {{-- Indices of existing images that are kept (non-removed) --}}
+                                <template x-for="keptIdx in keptIndices()" :key="'kept-' + keptIdx">
+                                    <input type="hidden" name="kept_image_indices[]" :value="keptIdx">
+                                </template>
 
                                 <input type="hidden" name="primary_image_index" :value="primaryMergedIndex()">
 
@@ -470,7 +474,7 @@
                                         accept="image/jpeg,image/jfif,image/png,image/webp"
                                         multiple
                                         x-ref="newFilesInput"
-                                        x-on:change="onNewFilesSelected($event)"
+                                        @change="onNewFilesSelected($event)"
                                         class="block w-full text-sm text-gray-600
                                             file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
                                             file:text-sm file:font-semibold file:bg-[#1E3C2C] file:text-white
@@ -480,14 +484,21 @@
                                     </p>
 
                                     <div x-show="newFiles.length > 0" x-cloak class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                                        <template x-for="(file, idx) in newFiles" :key="'new-' + idx">
+                                        <template x-for="(file, idx) in newFiles" :key="'new-' + file.id">
                                             <div class="relative group rounded-lg overflow-hidden border-2"
                                                 :class="isPrimary('new', idx) ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200'">
 
                                                 <img :src="file.url" :alt="file.name" class="w-full h-32 object-cover">
 
                                                 <button type="button"
-                                                    x-on:click="setPrimary('new', idx)"
+                                                    @click.prevent.stop="removeNew(idx)"
+                                                    class="absolute top-1 right-1 w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md z-10"
+                                                    title="Remove new image">
+                                                    <i class="fas fa-trash text-[11px]"></i>
+                                                </button>
+
+                                                <button type="button"
+                                                    @click.prevent.stop="setPrimary('new', idx)"
                                                     :class="isPrimary('new', idx) ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700'"
                                                     class="absolute bottom-1 left-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-sm z-10">
                                                     <i class="fas fa-star text-[9px] mr-0.5"></i>
@@ -626,6 +637,22 @@
 
     <script>
         function productEditForm() {
+            // Normalise images: accept an array of objects, an array of path strings,
+            // or a JSON string, and always return [{ path, alt, ..., removed: false }].
+            const normaliseImages = (raw) => {
+                if (typeof raw === 'string') {
+                    try { raw = JSON.parse(raw); } catch (e) { raw = []; }
+                }
+                if (!Array.isArray(raw)) raw = Object.values(raw || {});
+
+                return raw
+                    .filter(Boolean)
+                    .map(img => (typeof img === 'string' ? { path: img } : { ...img }))
+                    .map(img => ({ ...img, removed: false }));
+            };
+
+            let fileCounter = 0;
+
             return {
                 categoryId: @json((string) old('category_id', $product->category_id)),
                 attributes: [],
@@ -634,15 +661,13 @@
 
                 attrValues: @json($product->attributes ?? []),
 
-                existingImages: @json($product->images ?? []).map(img => ({
-                    ...img,
-                    removed: false,
-                })),
+                existingImages: normaliseImages(@json($product->images ?? [])),
 
                 newFiles: [],
 
                 primary: null,
 
+                // Alpine calls init() automatically
                 init() {
                     @if (!empty($product->primary_image))
                         const primaryPath = @json($product->primary_image);
@@ -661,23 +686,30 @@
                     }
                 },
 
+                // ---------- Existing images ----------
+
                 removeExisting(idx) {
                     const current = this.existingImages[idx];
                     if (!current) return;
 
-                    const willBeRemoved = !current.removed;
+                    // Mutate in place (reactive) instead of replacing the array/objects.
+                    current.removed = !current.removed;
 
-                    this.existingImages = this.existingImages.map((item, i) =>
-                        i === idx ? { ...item, removed: willBeRemoved } : item
-                    );
-
-                    if (willBeRemoved && this.primary?.kind === 'existing' && this.primary.index === idx) {
+                    if (current.removed && this.primary?.kind === 'existing' && this.primary.index === idx) {
                         this.primary = this.firstAvailablePrimary();
                     }
 
-                    if (!willBeRemoved && !this.primary) {
+                    if (!current.removed && !this.primary) {
                         this.primary = { kind: 'existing', index: idx };
                     }
+                },
+
+                keptIndices() {
+                    const kept = [];
+                    this.existingImages.forEach((img, i) => {
+                        if (!img.removed) kept.push(i);
+                    });
+                    return kept;
                 },
 
                 firstAvailablePrimary() {
@@ -691,19 +723,45 @@
                     return null;
                 },
 
+                // ---------- Primary ----------
+
                 isPrimary(kind, index) {
-                    return this.primary && this.primary.kind === kind && this.primary.index === index;
+                    return !!this.primary && this.primary.kind === kind && this.primary.index === index;
                 },
 
                 setPrimary(kind, index) {
                     this.primary = { kind, index };
                 },
 
+                primaryMergedIndex() {
+                    if (!this.primary) return 0;
+
+                    const keptCount = this.existingImages.filter(i => !i.removed).length;
+
+                    if (this.primary.kind === 'existing') {
+                        let pos = 0;
+                        for (let i = 0; i < this.existingImages.length; i++) {
+                            if (i === this.primary.index) break;
+                            if (!this.existingImages[i].removed) pos++;
+                        }
+                        return pos;
+                    }
+
+                    if (this.primary.kind === 'new') {
+                        return keptCount + this.primary.index;
+                    }
+
+                    return 0;
+                },
+
+                // ---------- New files ----------
+
                 onNewFilesSelected(event) {
                     const files = Array.from(event.target.files || []);
 
                     for (const file of files) {
                         this.newFiles.push({
+                            id: ++fileCounter,
                             url: URL.createObjectURL(file),
                             name: file.name,
                             file: file,
@@ -714,30 +772,43 @@
                         this.primary = { kind: 'new', index: 0 };
                     }
 
-                    event.target.value = '';
+                    // Keep the real <input> in sync with ALL selected files so they are
+                    // actually submitted with the form (previously the input was cleared).
+                    this.syncFileInput();
                 },
 
-                primaryMergedIndex() {
-                    if (!this.primary) return 0;
+                removeNew(idx) {
+                    const item = this.newFiles[idx];
+                    if (!item) return;
 
-                    const keptExisting = this.existingImages.filter(i => !i.removed);
+                    URL.revokeObjectURL(item.url);
+                    this.newFiles.splice(idx, 1);
 
-                    if (this.primary.kind === 'existing') {
-                        const originalIdx = this.primary.index;
-                        let pos = 0;
-                        for (let i = 0; i < this.existingImages.length; i++) {
-                            if (i === originalIdx) break;
-                            if (!this.existingImages[i].removed) pos++;
+                    if (this.primary?.kind === 'new') {
+                        if (this.primary.index === idx) {
+                            this.primary = this.firstAvailablePrimary();
+                        } else if (this.primary.index > idx) {
+                            this.primary = { kind: 'new', index: this.primary.index - 1 };
                         }
-                        return pos;
                     }
 
-                    if (this.primary.kind === 'new') {
-                        return keptExisting.length + this.primary.index;
-                    }
-
-                    return 0;
+                    this.syncFileInput();
                 },
+
+                syncFileInput() {
+                    const input = this.$refs.newFilesInput;
+                    if (!input) return;
+
+                    try {
+                        const dt = new DataTransfer();
+                        this.newFiles.forEach(f => dt.items.add(f.file));
+                        input.files = dt.files;
+                    } catch (e) {
+                        console.error('Could not sync file input:', e);
+                    }
+                },
+
+                // ---------- Attributes ----------
 
                 async loadAttributes() {
                     if (!this.categoryId) {

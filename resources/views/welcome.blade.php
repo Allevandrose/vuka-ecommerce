@@ -150,16 +150,14 @@
     </script>
 </head>
 
-<body class="text-ink pb-24 lg:pb-0 antialiased"
-    x-data="{ mobileSearchOpen: false, menuOpen: false, scrolled: false }"
+<body class="text-ink pb-24 lg:pb-0 antialiased" x-data="{ mobileSearchOpen: false, menuOpen: false, scrolled: false }"
     x-effect="document.body.classList.toggle('overflow-hidden', menuOpen || mobileSearchOpen)"
     @scroll.window.passive="scrolled = window.scrollY > 8"
     @resize.window="if (window.innerWidth >= 1024) { menuOpen = false; mobileSearchOpen = false }"
     @keydown.escape.window="menuOpen = false; mobileSearchOpen = false">
 
     <!-- ANNOUNCEMENT BAR -->
-    <div x-data="{ show: true }" x-show="show" x-cloak
-        class="bg-moss text-white text-xs sm:text-[13px]">
+    <div x-data="{ show: true }" x-show="show" x-cloak class="bg-moss text-white text-xs sm:text-[13px]">
         <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2 relative">
             <i class="fas fa-truck text-gold text-[11px]"></i>
             <p class="text-center font-medium pr-6 sm:pr-0">Free delivery over KSh 5,000. Pay with M-Pesa or card.</p>
@@ -170,7 +168,7 @@
         </div>
     </div>
 
-       <!-- HEADER -->
+    <!-- HEADER -->
     <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur-md border-b border-line transition-shadow duration-200"
         :class="scrolled ? 'shadow-[0_6px_20px_-12px_rgba(20,35,28,0.35)]' : ''">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3 lg:gap-6">
@@ -188,16 +186,16 @@
             </a>
 
             {{-- Desktop search: borderless filled pill, lifts and turns white on focus --}}
-            <form action="{{ route('search') }}" method="GET" role="search"
-                x-data="{ q: '', focused: false }"
+            <form action="{{ route('search') }}" method="GET" role="search" x-data="{ q: '', focused: false }"
                 @keydown.slash.window="if (!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && window.innerWidth >= 1024) { $event.preventDefault(); $refs.q.focus(); }"
                 class="hidden lg:flex flex-1 max-w-xl items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
                 :class="focused
-                    ? 'bg-white shadow-[0_10px_30px_-10px_rgba(32,80,60,0.35)]'
-                    : 'bg-ink/[0.05] hover:bg-ink/[0.08]'">
+                    ?
+                    'bg-white shadow-[0_10px_30px_-10px_rgba(32,80,60,0.35)]' :
+                    'bg-ink/[0.05] hover:bg-ink/[0.08]'">
 
-                <input x-ref="q" x-model="q" @focus="focused = true" @blur="focused = false" type="text" name="q"
-                    placeholder="Search products, brands…" autocomplete="off" enterkeyhint="search"
+                <input x-ref="q" x-model="q" @focus="focused = true" @blur="focused = false" type="text"
+                    name="q" placeholder="Search products, brands…" autocomplete="off" enterkeyhint="search"
                     aria-label="Search products"
                     class="bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none w-full text-sm placeholder:text-muted/70">
 
@@ -219,7 +217,8 @@
             {{-- Desktop nav links --}}
             <nav class="hidden lg:flex items-center gap-5 text-[14px] font-medium text-ink/85 ml-auto"
                 aria-label="Primary">
-                <a href="#" class="inline-flex items-center gap-1.5 text-gold hover:text-gold/80 transition-colors">
+                <a href="#"
+                    class="inline-flex items-center gap-1.5 text-gold hover:text-gold/80 transition-colors">
                     <i class="fas fa-bolt text-xs"></i> Deals
                 </a>
                 <a href="#" class="hover:text-moss transition-colors">Track Order</a>
@@ -331,17 +330,28 @@
 
             <div class="flex-1 overflow-y-auto no-scrollbar px-5 py-5 space-y-6">
 
-                {{-- Drawer search --}}
-                <form action="{{ route('search') }}" method="GET" role="search"
-                    class="flex items-center gap-2.5 bg-white border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-moss focus-within:ring-4 focus-within:ring-moss/10 transition-all search-wrapper">
-                    <i class="fas fa-search text-muted text-sm"></i>
-                    <input type="text" name="q" placeholder="Search products, brands…" autocomplete="off"
+                {{-- Drawer search: matches header style (borderless filled pill, lifts and turns white on focus) --}}
+                <form action="{{ route('search') }}" method="GET" role="search" x-data="{ q: '', focused: false }"
+                    class="flex items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
+                    :class="focused
+                        ?
+                        'bg-white shadow-[0_10px_30px_-10px_rgba(32,80,60,0.35)]' :
+                        'bg-ink/[0.05] hover:bg-ink/[0.08]'">
+
+                    <input x-model="q" @focus="focused = true" @blur="focused = false" type="text"
+                        name="q" placeholder="Search products, brands…" autocomplete="off"
                         enterkeyhint="search" aria-label="Search products"
-                        class="bg-transparent outline-none w-full text-base placeholder:text-muted/70 search-input">
-                    <button type="submit"
-                        class="h-9 w-9 shrink-0 rounded-full bg-moss text-white flex items-center justify-center hover:bg-moss/90 transition-colors"
-                        aria-label="Search">
-                        <i class="fas fa-arrow-right text-xs"></i>
+                        class="bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none w-full text-sm placeholder:text-muted/70 search-input">
+
+                    <button type="button" x-show="q.length > 0" x-cloak
+                        @click="q = ''; $el.previousElementSibling.focus()" aria-label="Clear search"
+                        class="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-ink/5 transition-colors">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+
+                    <button type="submit" aria-label="Search"
+                        class="h-8 w-8 shrink-0 rounded-full bg-gold text-ink flex items-center justify-center hover:bg-gold/90 active:scale-95 transition-all">
+                        <i class="fas fa-search text-xs"></i>
                     </button>
                 </form>
 
@@ -431,31 +441,33 @@
     <div x-show="mobileSearchOpen" x-cloak x-transition:enter="transition ease-out duration-200"
         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0" @click.self="mobileSearchOpen = false"
-        x-init="$watch('mobileSearchOpen', v => v && $nextTick(() => $refs.mobileSearchInput.focus()))"
+        x-transition:leave-end="opacity-0" @click.self="mobileSearchOpen = false" x-init="$watch('mobileSearchOpen', v => v && $nextTick(() => $refs.mobileSearchInput.focus()))"
         class="lg:hidden fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
         role="dialog" aria-modal="true" aria-label="Search">
         <div x-show="mobileSearchOpen" x-transition:enter="transition ease-out duration-200 delay-75"
             x-transition:enter-start="opacity-0 -translate-y-3" x-transition:enter-end="opacity-100 translate-y-0"
-            class="bg-white rounded-2xl p-4 w-full max-w-md shadow-2xl" x-data="{ q: '' }">
+            class="bg-white rounded-2xl p-4 w-full max-w-md shadow-2xl" x-data="{ q: '', focused: false }">
 
-            {{-- Mobile search --}}
+            {{-- Mobile search: matches header style --}}
             <form action="{{ route('search') }}" method="GET" role="search" @submit="mobileSearchOpen = false">
-                <div
-                    class="flex items-center gap-3 bg-paper border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-moss focus-within:ring-4 focus-within:ring-moss/10 transition-all search-wrapper">
-                    <i class="fas fa-search text-muted text-sm"></i>
-                    <input x-ref="mobileSearchInput" x-model="q" type="text" name="q"
-                        placeholder="Search products, brands…" autocomplete="off" enterkeyhint="search"
-                        aria-label="Search products"
-                        class="bg-transparent outline-none w-full text-base placeholder:text-muted/70 search-input">
-                    <button type="button" x-show="q.length > 0" x-cloak @click="q = ''; $refs.mobileSearchInput.focus()"
-                        class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-ink"
+                <div class="flex items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
+                    :class="focused
+                        ?
+                        'bg-white shadow-[0_10px_30px_-10px_rgba(32,80,60,0.35)]' :
+                        'bg-ink/[0.05] hover:bg-ink/[0.08]'">
+                    <input x-ref="mobileSearchInput" x-model="q" @focus="focused = true" @blur="focused = false"
+                        type="text" name="q" placeholder="Search products, brands…" autocomplete="off"
+                        enterkeyhint="search" aria-label="Search products"
+                        class="bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none w-full text-sm placeholder:text-muted/70 search-input">
+                    <button type="button" x-show="q.length > 0" x-cloak
+                        @click="q = ''; $refs.mobileSearchInput.focus()"
+                        class="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-ink/5 transition-colors"
                         aria-label="Clear search">
                         <i class="fas fa-times text-xs"></i>
                     </button>
-                    <button type="submit"
-                        class="h-9 px-4 shrink-0 rounded-full bg-moss text-white font-semibold text-sm hover:bg-moss/90 transition-colors">
-                        Go
+                    <button type="submit" aria-label="Search"
+                        class="h-8 w-8 shrink-0 rounded-full bg-gold text-ink flex items-center justify-center hover:bg-gold/90 active:scale-95 transition-all">
+                        <i class="fas fa-search text-xs"></i>
                     </button>
                 </div>
             </form>
@@ -466,7 +478,6 @@
             </button>
         </div>
     </div>
-
     <!-- MAIN -->
     <main class="max-w-7xl mx-auto px-4">
 
