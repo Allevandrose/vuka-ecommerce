@@ -82,6 +82,20 @@
             outline-offset: 2px;
         }
 
+        /* Remove default search input outline & focus ring */
+        input[type="text"],
+        input[type="email"],
+        input[type="search"] {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Keep a subtle custom focus style for the search wrapper */
+        .search-wrapper:focus-within {
+            border-color: #20503C;
+            box-shadow: 0 0 0 4px rgba(32, 80, 60, 0.1);
+        }
+
         @media (prefers-reduced-motion: reduce) {
             html {
                 scroll-behavior: auto;
@@ -156,7 +170,7 @@
         </div>
     </div>
 
-    <!-- HEADER -->
+       <!-- HEADER -->
     <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur-md border-b border-line transition-shadow duration-200"
         :class="scrolled ? 'shadow-[0_6px_20px_-12px_rgba(20,35,28,0.35)]' : ''">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3 lg:gap-6">
@@ -173,30 +187,32 @@
                 <img src="{{ asset('images/vukashop-logo.svg') }}" alt="VukaShop" class="h-9 sm:h-10 w-auto">
             </a>
 
-            {{-- Desktop search --}}
+            {{-- Desktop search: borderless filled pill, lifts and turns white on focus --}}
             <form action="{{ route('search') }}" method="GET" role="search"
                 x-data="{ q: '', focused: false }"
                 @keydown.slash.window="if (!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && window.innerWidth >= 1024) { $event.preventDefault(); $refs.q.focus(); }"
-                class="hidden lg:flex flex-1 max-w-xl items-center gap-2 bg-white border rounded-full pl-4 pr-1.5 h-11 transition-all duration-200"
-                :class="focused ? 'border-moss ring-4 ring-moss/10 shadow-sm' : 'border-line hover:border-moss/40'">
-                <i class="fas fa-search text-sm transition-colors" :class="focused ? 'text-moss' : 'text-muted'"></i>
+                class="hidden lg:flex flex-1 max-w-xl items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
+                :class="focused
+                    ? 'bg-white shadow-[0_10px_30px_-10px_rgba(32,80,60,0.35)]'
+                    : 'bg-ink/[0.05] hover:bg-ink/[0.08]'">
+
                 <input x-ref="q" x-model="q" @focus="focused = true" @blur="focused = false" type="text" name="q"
                     placeholder="Search products, brands…" autocomplete="off" enterkeyhint="search"
                     aria-label="Search products"
-                    class="bg-transparent outline-none w-full text-sm placeholder:text-muted/70">
+                    class="bg-transparent border-0 outline-none ring-0 focus:ring-0 focus:outline-none w-full text-sm placeholder:text-muted/70">
 
                 <button type="button" x-show="q.length > 0" x-cloak @click="q = ''; $refs.q.focus()"
                     aria-label="Clear search"
-                    class="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-paper transition-colors">
+                    class="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-ink/5 transition-colors">
                     <i class="fas fa-times text-xs"></i>
                 </button>
 
                 <kbd x-show="q.length === 0 && !focused"
-                    class="hidden xl:inline-flex items-center justify-center h-6 min-w-[24px] px-1.5 rounded-md border border-line bg-paper text-[11px] font-semibold text-muted">/</kbd>
+                    class="hidden xl:inline-flex items-center justify-center h-6 min-w-[24px] px-1.5 rounded-md bg-white/80 shadow-sm text-[11px] font-semibold text-muted">/</kbd>
 
-                <button type="submit"
-                    class="h-8 px-4 shrink-0 rounded-full bg-moss text-white text-[13px] font-semibold hover:bg-moss/90 transition-colors flex items-center gap-2">
-                    Search
+                <button type="submit" aria-label="Search"
+                    class="h-8 w-8 shrink-0 rounded-full bg-gold text-ink flex items-center justify-center hover:bg-gold/90 active:scale-95 transition-all">
+                    <i class="fas fa-search text-xs"></i>
                 </button>
             </form>
 
@@ -317,11 +333,11 @@
 
                 {{-- Drawer search --}}
                 <form action="{{ route('search') }}" method="GET" role="search"
-                    class="flex items-center gap-2.5 bg-white border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-moss focus-within:ring-4 focus-within:ring-moss/10 transition-all">
+                    class="flex items-center gap-2.5 bg-white border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-moss focus-within:ring-4 focus-within:ring-moss/10 transition-all search-wrapper">
                     <i class="fas fa-search text-muted text-sm"></i>
                     <input type="text" name="q" placeholder="Search products, brands…" autocomplete="off"
                         enterkeyhint="search" aria-label="Search products"
-                        class="bg-transparent outline-none w-full text-base placeholder:text-muted/70">
+                        class="bg-transparent outline-none w-full text-base placeholder:text-muted/70 search-input">
                     <button type="submit"
                         class="h-9 w-9 shrink-0 rounded-full bg-moss text-white flex items-center justify-center hover:bg-moss/90 transition-colors"
                         aria-label="Search">
@@ -426,12 +442,12 @@
             {{-- Mobile search --}}
             <form action="{{ route('search') }}" method="GET" role="search" @submit="mobileSearchOpen = false">
                 <div
-                    class="flex items-center gap-3 bg-paper border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-moss focus-within:ring-4 focus-within:ring-moss/10 transition-all">
+                    class="flex items-center gap-3 bg-paper border border-line rounded-full pl-4 pr-1.5 h-12 focus-within:border-moss focus-within:ring-4 focus-within:ring-moss/10 transition-all search-wrapper">
                     <i class="fas fa-search text-muted text-sm"></i>
                     <input x-ref="mobileSearchInput" x-model="q" type="text" name="q"
                         placeholder="Search products, brands…" autocomplete="off" enterkeyhint="search"
                         aria-label="Search products"
-                        class="bg-transparent outline-none w-full text-base placeholder:text-muted/70">
+                        class="bg-transparent outline-none w-full text-base placeholder:text-muted/70 search-input">
                     <button type="button" x-show="q.length > 0" x-cloak @click="q = ''; $refs.mobileSearchInput.focus()"
                         class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-ink"
                         aria-label="Clear search">
@@ -663,7 +679,7 @@
                     inbox.</p>
                 <form class="flex gap-2 flex-wrap justify-center" @submit.prevent="sent = true">
                     <input type="email" x-model="email" placeholder="Your email" required
-                        class="flex-1 min-w-[160px] px-5 py-2.5 rounded-full border border-line bg-paper text-sm focus:outline-none focus:ring-2 focus:ring-moss/40 focus:border-transparent">
+                        class="flex-1 min-w-[160px] px-5 py-2.5 rounded-full border border-line bg-paper text-sm focus:outline-none focus:ring-2 focus:ring-moss/40 focus:border-transparent search-input">
                     <button type="submit"
                         class="inline-flex items-center gap-2 bg-moss text-white font-bold px-6 py-2.5 rounded-full hover:bg-moss/90 transition-colors text-sm">
                         <i class="fas" :class="sent ? 'fa-check' : 'fa-paper-plane'"></i>
