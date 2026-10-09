@@ -5,11 +5,14 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\AttributeJsonController;
 use App\Http\Controllers\Admin\BrandController;
-use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\StaffManagementController;
 use App\Http\Controllers\Admin\StaffRegistrationController;
 use App\Http\Controllers\Admin\VendorManagementController;
+use App\Http\Controllers\Shop\CategoryController;
+use App\Http\Controllers\Shop\HomeController;
+use App\Http\Controllers\Shop\ProductController;
 use App\Http\Controllers\VendorApplicationController;
 use App\Http\Controllers\VendorRegistrationController;
 use App\Models\User;
@@ -19,9 +22,11 @@ use Illuminate\Support\Facades\Route;
 // ============================================
 // PUBLIC ROUTES
 // ============================================
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Public catalog — category and product pages live
+Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('category.show');
+Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 // ============================================
 // GOOGLE AUTH ROUTES
@@ -61,12 +66,12 @@ Route::get('/account/inactive', [StaffRegistrationController::class, 'inactive']
 // ADMIN — CATEGORIES
 // ============================================
 Route::middleware(['auth', 'admin'])->prefix('admin/categories')->name('admin.categories.')->group(function () {
-    Route::get('/', [CategoryController::class, 'index'])->name('index');
-    Route::get('/create', [CategoryController::class, 'create'])->name('create');
-    Route::post('/', [CategoryController::class, 'store'])->name('store');
-    Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('edit');
-    Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
-    Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
+    Route::get('/', [AdminCategoryController::class, 'index'])->name('index');
+    Route::get('/create', [AdminCategoryController::class, 'create'])->name('create');
+    Route::post('/', [AdminCategoryController::class, 'store'])->name('store');
+    Route::get('/{category}/edit', [AdminCategoryController::class, 'edit'])->name('edit');
+    Route::put('/{category}', [AdminCategoryController::class, 'update'])->name('update');
+    Route::delete('/{category}', [AdminCategoryController::class, 'destroy'])->name('destroy');
 });
 
 // ============================================
@@ -100,23 +105,23 @@ Route::middleware(['auth', 'admin'])->prefix('admin/attributes')->name('admin.at
 // ADMIN — PRODUCTS
 // ============================================
 Route::middleware(['auth', 'admin'])->prefix('admin/products')->name('admin.products.')->group(function () {
-    Route::get('/', [ProductController::class, 'index'])->name('index');
-    Route::get('/create', [ProductController::class, 'create'])->name('create');
-    Route::post('/', [ProductController::class, 'store'])->name('store');
+    Route::get('/', [AdminProductController::class, 'index'])->name('index');
+    Route::get('/create', [AdminProductController::class, 'create'])->name('create');
+    Route::post('/', [AdminProductController::class, 'store'])->name('store');
 
     // Workflow actions — declared BEFORE {product} wildcards
-    Route::post('/{product}/approve', [ProductController::class, 'approve'])->name('approve');
-    Route::post('/{product}/reject', [ProductController::class, 'reject'])->name('reject');
-    Route::post('/{product}/disable', [ProductController::class, 'disable'])->name('disable');
-    Route::post('/{product}/enable', [ProductController::class, 'enable'])->name('enable');
-    Route::post('/{product}/toggle-featured', [ProductController::class, 'toggleFeatured'])->name('toggleFeatured');
-    Route::post('/{product}/archive', [ProductController::class, 'archive'])->name('archive');
+    Route::post('/{product}/approve', [AdminProductController::class, 'approve'])->name('approve');
+    Route::post('/{product}/reject', [AdminProductController::class, 'reject'])->name('reject');
+    Route::post('/{product}/disable', [AdminProductController::class, 'disable'])->name('disable');
+    Route::post('/{product}/enable', [AdminProductController::class, 'enable'])->name('enable');
+    Route::post('/{product}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])->name('toggleFeatured');
+    Route::post('/{product}/archive', [AdminProductController::class, 'archive'])->name('archive');
 
     // CRUD resource (show/edit/update/destroy)
-    Route::get('/{product}', [ProductController::class, 'show'])->name('show');
-    Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
-    Route::put('/{product}', [ProductController::class, 'update'])->name('update');
-    Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+    Route::get('/{product}', [AdminProductController::class, 'show'])->name('show');
+    Route::get('/{product}/edit', [AdminProductController::class, 'edit'])->name('edit');
+    Route::put('/{product}', [AdminProductController::class, 'update'])->name('update');
+    Route::delete('/{product}', [AdminProductController::class, 'destroy'])->name('destroy');
 });
 
 // ============================================

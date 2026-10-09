@@ -1,4 +1,4 @@
-{{-- resources/views/home.blade.php --}}
+{{-- resources/views/welcome.blade.php --}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>{{ config('app.name', 'Vuka Shop') }} · modern marketplace</title>
 
-    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +14,6 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Tailwind (utility engine) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -41,7 +39,6 @@
         }
     </script>
 
-    <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
     @stack('styles')
@@ -56,7 +53,7 @@
 
     <script>
         document.addEventListener('alpine:init', () => {
-            Alpine.store('cart', { count: 3 });
+            Alpine.store('cart', { count: 0 });
 
             Alpine.data('carousel', () => ({
                 current: 0,
@@ -82,35 +79,28 @@
 </head>
 <body class="text-ink pb-24 sm:pb-0 antialiased" x-data="{ mobileSearchOpen: false }">
 
-    <!-- ============================================================
-    HEADER
-    ============================================================ -->
+    <!-- HEADER -->
     <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur-md border-b border-line">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
 
-            <!-- mobile: bell -->
             <button class="sm:hidden relative h-10 w-10 rounded-full bg-white flex items-center justify-center text-ink shadow-sm" aria-label="Notifications">
                 <i class="fas fa-bell text-sm"></i>
                 <span class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-gold ring-2 ring-white"></span>
             </button>
 
-            <!-- logo -->
             <a href="{{ route('home') }}" class="font-serif text-2xl font-semibold tracking-tight text-ink shrink-0">
                 Vuka<span class="text-moss">Shop</span>
             </a>
 
-            <!-- mobile: search trigger -->
             <button @click="mobileSearchOpen = true" class="sm:hidden h-10 w-10 rounded-full bg-white flex items-center justify-center text-ink shadow-sm" aria-label="Search">
                 <i class="fas fa-search text-sm"></i>
             </button>
 
-            <!-- desktop: search bar -->
             <div class="hidden sm:flex items-center gap-2.5 bg-white border border-line rounded-full px-4 py-2.5 flex-1 max-w-sm mx-3">
                 <i class="fas fa-search text-muted text-sm"></i>
                 <input type="text" placeholder="Search products, brands…" class="bg-transparent outline-none w-full text-sm placeholder:text-muted/70">
             </div>
 
-            <!-- desktop: nav links -->
             <nav class="hidden sm:flex items-center gap-7 text-[15px] font-medium text-ink/85">
                 <a href="#" class="hover:text-moss transition-colors">Electronics</a>
                 <a href="#" class="hover:text-moss transition-colors">Fashion</a>
@@ -119,7 +109,6 @@
                 <a href="#" class="text-gold hover:text-gold/80 transition-colors">Deals</a>
             </nav>
 
-            <!-- desktop: icons + auth -->
             <div class="hidden sm:flex items-center gap-5">
                 <div class="flex items-center gap-4 text-lg text-ink/70">
                     <button class="hover:text-gold transition-colors" aria-label="Wishlist"><i class="far fa-heart"></i></button>
@@ -144,9 +133,7 @@
         </div>
     </header>
 
-    <!-- ============================================================
-    MOBILE SEARCH OVERLAY
-    ============================================================ -->
+    <!-- MOBILE SEARCH OVERLAY -->
     <div x-show="mobileSearchOpen" x-cloak
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
          x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
@@ -167,9 +154,7 @@
         </div>
     </div>
 
-    <!-- ============================================================
-    MAIN
-    ============================================================ -->
+    <!-- MAIN -->
     <main class="max-w-7xl mx-auto px-4">
 
         <!-- HERO CAROUSEL -->
@@ -209,27 +194,40 @@
         </div>
 
         <!-- CATEGORY CHIPS -->
-        <div class="flex gap-2.5 overflow-x-auto no-scrollbar py-1 pb-5" x-data="{ active: 'Trending' }">
-            @php
-            $categories = [
-            ['name' => 'Trending', 'icon' => 'fa-fire'],
-            ['name' => 'Electronics', 'icon' => 'fa-mobile-alt'],
-            ['name' => 'Fashion', 'icon' => 'fa-tshirt'],
-            ['name' => 'Home', 'icon' => 'fa-couch'],
-            ['name' => 'Beauty', 'icon' => 'fa-spa'],
-            ['name' => 'Sports', 'icon' => 'fa-dumbbell'],
-            ['name' => 'Books', 'icon' => 'fa-book'],
-            ];
-            @endphp
-            @foreach($categories as $cat)
-            <button @click="active = '{{ $cat['name'] }}'"
-                    :class="active === '{{ $cat['name'] }}' ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-line hover:border-moss/40'"
-                    class="flex items-center gap-2 whitespace-nowrap border rounded-full px-4 py-2 text-sm font-medium shadow-sm transition-colors">
-                <i class="fas {{ $cat['icon'] }} text-xs" :class="active === '{{ $cat['name'] }}' ? 'text-gold' : 'text-moss'"></i>
-                {{ $cat['name'] }}
-            </button>
+        <div class="flex gap-2.5 overflow-x-auto no-scrollbar py-1 pb-5" x-data="{ active: 'All' }">
+            <a href="#"
+               class="flex items-center gap-2 whitespace-nowrap border border-ink bg-ink text-white rounded-full px-4 py-2 text-sm font-medium shadow-sm transition-colors">
+                <i class="fas fa-fire text-xs text-gold"></i>
+                All
+            </a>
+            @foreach ($categories as $category)
+                <a href="{{ route('category.show', $category->slug) }}"
+                   class="flex items-center gap-2 whitespace-nowrap border border-line bg-white text-ink rounded-full px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:border-moss/40">
+                    @if ($category->icon)
+                        <i class="fas {{ $category->icon }} text-xs text-moss"></i>
+                    @endif
+                    {{ $category->name }}
+                </a>
             @endforeach
         </div>
+
+        {{-- FEATURED SECTION (only if there are featured products) --}}
+        @if ($featured->isNotEmpty())
+            <div class="flex items-baseline justify-between mt-2 mb-3">
+                <h3 class="font-serif text-xl font-semibold flex items-center gap-2">
+                    <i class="fas fa-crown text-gold text-base"></i> Featured
+                </h3>
+                <a href="#" class="text-moss font-semibold text-sm flex items-center gap-1.5 hover:text-moss/70 transition-colors">
+                    See all <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 mb-8">
+                @foreach ($featured as $product)
+                    <x-product-card :product="$product" />
+                @endforeach
+            </div>
+        @endif
 
         <!-- POPULAR PRODUCTS -->
         <div class="flex items-baseline justify-between mt-2 mb-3">
@@ -241,68 +239,18 @@
             </a>
         </div>
 
-        <div class="flex items-center justify-between border-b border-line pb-3 mb-4 text-sm font-semibold text-ink/80"
-             x-data="{ filterOpen: false, sortOpen: false, sort: 'Popular' }">
-            <div class="relative">
-                <button @click="filterOpen = !filterOpen; sortOpen = false" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white transition-colors">
-                    <i class="fas fa-sliders-h text-muted text-xs"></i> Filter
-                    <i class="fas fa-chevron-down text-[10px] text-muted transition-transform" :class="filterOpen && 'rotate-180'"></i>
-                </button>
-                <div x-show="filterOpen" x-cloak @click.outside="filterOpen = false"
-                     x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
-                     class="absolute z-10 mt-2 w-48 bg-white rounded-xl shadow-lg border border-line p-2 font-medium">
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">In stock</button>
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">On sale</button>
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">Free delivery</button>
-                </div>
+        @if ($popular->isEmpty())
+            <div class="bg-white rounded-2xl border border-line p-8 text-center mb-8">
+                <i class="fas fa-box-open text-3xl text-muted/40 mb-3"></i>
+                <p class="text-sm text-muted">No products yet. Check back soon!</p>
             </div>
-            <div class="relative">
-                <button @click="sortOpen = !sortOpen; filterOpen = false" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white transition-colors">
-                    Sort: <span x-text="sort"></span>
-                    <i class="fas fa-chevron-down text-[10px] text-muted transition-transform" :class="sortOpen && 'rotate-180'"></i>
-                </button>
-                <div x-show="sortOpen" x-cloak @click.outside="sortOpen = false"
-                     x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
-                     class="absolute right-0 z-10 mt-2 w-48 bg-white rounded-xl shadow-lg border border-line p-2 font-medium">
-                    <button @click="sort = 'Popular'; sortOpen = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">Popular</button>
-                    <button @click="sort = 'Price: low to high'; sortOpen = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">Price: low to high</button>
-                    <button @click="sort = 'Price: high to low'; sortOpen = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">Price: high to low</button>
-                    <button @click="sort = 'Newest'; sortOpen = false" class="w-full text-left px-3 py-2 rounded-lg hover:bg-paper">Newest</button>
-                </div>
+        @else
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 mb-8">
+                @foreach ($popular as $product)
+                    <x-product-card :product="$product" />
+                @endforeach
             </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            @php
-            $popular = [
-            ['name' => 'Audix Arc Pro', 'tag' => 'Wireless', 'price' => 'KSh 45,000', 'img' => 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80'],
-            ['name' => 'Smartwatch Pro', 'tag' => 'Smart', 'price' => 'KSh 25,900', 'img' => 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=400&q=80'],
-            ['name' => 'Pulse Mini', 'tag' => 'Bluetooth', 'price' => 'KSh 12,900', 'img' => 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=400&q=80'],
-            ['name' => 'Canon EOS', 'tag' => 'Camera', 'price' => 'KSh 89,000', 'img' => 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80'],
-            ];
-            @endphp
-            @foreach($popular as $p)
-            <div class="group bg-white rounded-2xl border border-line p-2.5 pb-4 transition-all hover:border-moss/40 hover:shadow-md" x-data="{ fav: false, added: false }">
-                <div class="relative rounded-xl overflow-hidden bg-paper aspect-square">
-                    <img src="{{ $p['img'] }}" alt="{{ $p['name'] }}" loading="lazy" class="w-full h-full object-cover">
-                    <button @click="fav = !fav" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-sm transition-colors" :class="fav ? 'text-gold' : 'text-ink/30'">
-                        <i class="fa-heart" :class="fav ? 'fas' : 'far'"></i>
-                    </button>
-                </div>
-                <div class="text-xs font-semibold text-moss mt-2.5">{{ $p['tag'] }}</div>
-                <div class="font-semibold text-sm mt-0.5 mb-1 leading-snug">{{ $p['name'] }}</div>
-                <div class="font-bold text-ink">{{ $p['price'] }}</div>
-                <div class="flex justify-end mt-2.5">
-                    <button @click="added = true; $store.cart.count++; setTimeout(() => added = false, 1200)"
-                            :class="added ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-moss text-moss hover:bg-moss hover:text-white'"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-full border transition-colors">
-                        <i class="fas text-[10px]" :class="added ? 'fa-check' : 'fa-plus'"></i>
-                        <span x-text="added ? 'Added' : 'Add'"></span>
-                    </button>
-                </div>
-            </div>
-            @endforeach
-        </div>
+        @endif
 
         <!-- PROMO BANNER -->
         <div class="relative overflow-hidden rounded-xl2 bg-ink text-white px-6 py-8 sm:px-10 sm:py-10 mt-8 flex flex-col gap-2">
@@ -326,44 +274,22 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            @php
-            $bestsellers = [
-            ['name' => 'Gaming Mouse', 'tag' => 'Gaming', 'price' => 'KSh 4,900', 'img' => 'https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=400&q=80'],
-            ['name' => 'iPad Air', 'tag' => 'Tablet', 'price' => 'KSh 62,000', 'img' => 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80'],
-            ['name' => 'Bose SoundLink', 'tag' => 'Audio', 'price' => 'KSh 27,900', 'img' => 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=400&q=80'],
-            ['name' => 'MacBook Air', 'tag' => 'Laptop', 'price' => 'KSh 149,900', 'img' => 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=400&q=80'],
-            ];
-            @endphp
-            @foreach($bestsellers as $p)
-            <div class="group bg-white rounded-2xl border border-line p-2.5 pb-4 transition-all hover:border-moss/40 hover:shadow-md" x-data="{ fav: false, added: false }">
-                <div class="relative rounded-xl overflow-hidden bg-paper aspect-square">
-                    <img src="{{ $p['img'] }}" alt="{{ $p['name'] }}" loading="lazy" class="w-full h-full object-cover">
-                    <button @click="fav = !fav" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-sm transition-colors" :class="fav ? 'text-gold' : 'text-ink/30'">
-                        <i class="fa-heart" :class="fav ? 'fas' : 'far'"></i>
-                    </button>
-                </div>
-                <div class="text-xs font-semibold text-moss mt-2.5">{{ $p['tag'] }}</div>
-                <div class="font-semibold text-sm mt-0.5 mb-1 leading-snug">{{ $p['name'] }}</div>
-                <div class="font-bold text-ink">{{ $p['price'] }}</div>
-                <div class="flex justify-end mt-2.5">
-                    <button @click="added = true; $store.cart.count++; setTimeout(() => added = false, 1200)"
-                            :class="added ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-moss text-moss hover:bg-moss hover:text-white'"
-                            class="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-full border transition-colors">
-                        <i class="fas text-[10px]" :class="added ? 'fa-check' : 'fa-plus'"></i>
-                        <span x-text="added ? 'Added' : 'Add'"></span>
-                    </button>
-                </div>
+        @if ($bestsellers->isEmpty())
+            <div class="bg-white rounded-2xl border border-line p-8 text-center">
+                <i class="fas fa-box-open text-3xl text-muted/40 mb-3"></i>
+                <p class="text-sm text-muted">No best sellers yet.</p>
             </div>
-            @endforeach
-        </div>
+        @else
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                @foreach ($bestsellers as $product)
+                    <x-product-card :product="$product" />
+                @endforeach
+            </div>
+        @endif
 
-        <!-- ============================================================
-        VENDOR CTA SECTION  ← NEW
-        ============================================================ -->
+        <!-- VENDOR CTA -->
         <div class="relative overflow-hidden rounded-xl2 mt-9 text-white"
              style="background-image: linear-gradient(135deg, #14231C 0%, #20503C 100%);">
-            {{-- Decorative background icon --}}
             <i class="fas fa-store absolute -right-3 -bottom-3 text-[9rem] text-white/[0.05] rotate-[-6deg] pointer-events-none"></i>
 
             <div class="relative z-10 px-6 py-10 sm:px-12 sm:py-14 max-w-2xl">
@@ -415,9 +341,7 @@
         </div>
     </main>
 
-    <!-- ============================================================
-    FOOTER
-    ============================================================ -->
+    <!-- FOOTER -->
     <footer class="mt-10 bg-white border-t border-line pt-8 pb-6">
         <div class="max-w-7xl mx-auto px-4">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -465,9 +389,7 @@
         </div>
     </footer>
 
-    <!-- ============================================================
-    BOTTOM APP NAV (mobile)
-    ============================================================ -->
+    <!-- BOTTOM APP NAV (mobile) -->
     <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-line flex justify-around px-1"
          style="padding-bottom: calc(6px + env(safe-area-inset-bottom));">
         <a href="{{ route('home') }}" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-moss">
