@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\VendorManagementController;
 use App\Http\Controllers\Shop\CategoryController;
 use App\Http\Controllers\Shop\HomeController;
 use App\Http\Controllers\Shop\ProductController;
+use App\Http\Controllers\Shop\SearchController;
 use App\Http\Controllers\VendorApplicationController;
 use App\Http\Controllers\VendorRegistrationController;
 use App\Models\User;
@@ -27,6 +28,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Public catalog — category and product pages live
 Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('category.show');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 // ============================================
 // GOOGLE AUTH ROUTES

@@ -107,9 +107,9 @@
                 <i class="fas fa-search text-sm"></i>
             </button>
 
-            <form action="#" method="GET" class="hidden sm:flex items-center gap-2.5 bg-white border border-line rounded-full px-4 py-2.5 flex-1 max-w-sm mx-3">
+            <form action="{{ route('search') }}" method="GET" class="hidden sm:flex items-center gap-2.5 bg-white border border-line rounded-full px-4 py-2.5 flex-1 max-w-sm mx-3">
                 <i class="fas fa-search text-muted text-sm"></i>
-                <input type="text" name="q" placeholder="Search products, brands…" class="bg-transparent outline-none w-full text-sm placeholder:text-muted/70">
+                <input type="text" name="q" value="{{ request()->routeIs('search') ? request('q') : '' }}" placeholder="Search products, brands…" class="bg-transparent outline-none w-full text-sm placeholder:text-muted/70">
             </form>
 
             <nav class="hidden sm:flex items-center gap-7 text-[15px] font-medium text-ink/85">
@@ -158,10 +158,13 @@
         <div x-show="mobileSearchOpen"
              x-transition:enter="transition ease-out duration-200 delay-75" x-transition:enter-start="opacity-0 -translate-y-3" x-transition:enter-end="opacity-100 translate-y-0"
              class="bg-white rounded-2xl p-5 w-full max-w-md shadow-2xl">
-            <div class="flex items-center gap-3 bg-paper rounded-full px-4 py-3">
-                <i class="fas fa-search text-muted"></i>
-                <input x-ref="mobileSearchInput" type="text" placeholder="Search products, brands…" class="bg-transparent outline-none w-full text-base">
-            </div>
+            <form action="{{ route('search') }}" method="GET" @submit="mobileSearchOpen = false">
+                <div class="flex items-center gap-3 bg-paper rounded-full px-4 py-3">
+                    <i class="fas fa-search text-muted"></i>
+                    <input x-ref="mobileSearchInput" type="text" name="q" placeholder="Search products, brands…" class="bg-transparent outline-none w-full text-base">
+                    <button type="submit" class="shrink-0 text-moss font-semibold text-sm">Go</button>
+                </div>
+            </form>
             <button @click="mobileSearchOpen = false" class="mt-3 w-full py-2.5 rounded-full bg-paper text-ink/70 font-semibold text-sm hover:bg-line transition-colors">
                 <i class="fas fa-times mr-1"></i> Cancel
             </button>
