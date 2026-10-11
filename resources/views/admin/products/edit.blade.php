@@ -710,29 +710,171 @@
         </div>
     </div>
 
-    <script>
+     <script>
         function productEditForm() {
+            // Normalise images: accept array of objects, array of strings, or JSON string.
+            // Always returns [{ path, alt, removed: false }], deduped by path.
+            const normaliseImages = (raw) => {
+                if (typeof raw === 'string') {
+                    try { raw = JSON.parse(raw); } catch (e) { raw = []; }
+                }
+                if (!Array.isArray(raw)) raw = Object.values(raw || {});
+
+                const seen = new Set();
+                const cleaned = [];
+                for (const item of raw) {
+                    if (!item) continue;
+                    const obj = (typeof item === 'string') ? { path: item } : { ...item };
+                    if (!obj.path || seen.has(obj.path)) continue;
+                    seen.add(obj.path);
+                    cleaned.push({ ...obj, removed: false });
+                }
+                return cleaned;
+            };
+
+            let fileCounter = 0;
+
             return {
-                categoryId: @json(old('category_id', $product->category_id)),
-                attributes: @json($attributes ?? []),
-                attrValues: @json($attributeValues ?? []),
+                categoryId: @json((string) old('category_id', $product->category_id)),
+                attributes: [],
+                attrValues: @json($product->attributes ?? []),
                 attributesLoading: false,
                 submitting: false,
 
-                existingImages: @json($product->images->map(function($img, $idx) {
-                    return ['path' => $img->path, 'alt' => $img->alt ?? '', 'removed' => false];
-                })->values()->all()),
+                existingImages: normaliseImages(@json($product->images ?? [])),
 
                 newFiles: [],
-                primaryType: 'existing',
-                primaryIndex: {{ $product->images->search(fn($img) => $img->is_primary) !== false ? $product->images->search(fn($img) => $img->is_primary) : 0 }},
+                primary: null,
 
                 init() {
+                    @if (!empty($product->primary_image))
+                        const primaryPath = @json($product->primary_image);
+                        const idx = this.existingImages.findIndex(img => img.path === primaryPath);
+                        if (idx !== -1) {
+                            this.primary = { kind: 'existing', index: idx };
+                        }
+                    @endif
+
+                    if (!this.primary && this.existingImages.length > 0) {
+                        this.primary = { kind: 'existing', index: 0 };
+                    }
+
                     if (this.categoryId) {
                         this.loadAttributes();
                     }
                 },
 
+                // ---------- Existing images ----------
+                removeExisting(idx) {
+                    const cur = this.existingImages[idx];
+                    if (!cur) return;
+                    cur.removed = !cur.removed;
+
+                    if (cur.removed && this.primary?.kind === 'existing' && this.primary.index === idx) {
+                        this.primary = this.firstAvailablePrimary();
+                    }
+                    if (!cur.removed && !this.primary) {
+                        this.primary = { kind: 'existing', index: idx };
+                    }
+                },
+
+                keptIndices() {
+                    const out = [];
+                    this.existingImages.forEach((img, i) => {
+                        if (!img.removed) out.push(i);
+                    });
+                    return out;
+                },
+
+                firstAvailablePrimary() {
+                    const firstKept = this.existingImages.findIndex(i => !i.removed);
+                    if (firstKept !== -1) return { kind: 'existing', index: firstKept };
+                    if (this.newFiles.length > 0) return { kind: 'new', index: 0 };
+                    return null;
+                },
+
+                // ---------- Primary ----------
+                isPrimary(kind, index) {
+                    return !!this.primary && this.primary.kind === kind && this.primary.index === index;
+                },
+
+                setPrimary(kind, index) {
+                    this.primary = { kind, index };
+                },
+
+                primaryMergedIndex() {
+                    if (!this.primary) return 0;
+
+                    const keptCount = this.existingImages.filter(i => !i.removed).length;
+
+                    if (this.primary.kind === 'existing') {
+                        let pos = 0;
+                        for (let i = 0; i < this.existingImages.length; i++) {
+                            if (i === this.primary.index) break;
+                            if (!this.existingImages[i].removed) pos++;
+                        }
+                        return pos;
+                    }
+
+                    if (this.primary.kind === 'new') {
+                        return keptCount + this.primary.index;
+                    }
+
+                    return 0;
+                },
+
+                // ---------- New files ----------
+                onNewFilesSelected(event) {
+                    const files = Array.from(event.target.files || []);
+
+                    for (const file of files) {
+                        this.newFiles.push({
+                            id: ++fileCounter,
+                            url: URL.createObjectURL(file),
+                            name: file.name,
+                            file: file,
+                        });
+                    }
+
+                    if (!this.primary && this.newFiles.length > 0) {
+                        this.primary = { kind: 'new', index: 0 };
+                    }
+
+                    this.syncFileInput();
+                },
+
+                removeNew(idx) {
+                    const item = this.newFiles[idx];
+                    if (!item) return;
+
+                    URL.revokeObjectURL(item.url);
+                    this.newFiles.splice(idx, 1);
+
+                    if (this.primary?.kind === 'new') {
+                        if (this.primary.index === idx) {
+                            this.primary = this.firstAvailablePrimary();
+                        } else if (this.primary.index > idx) {
+                            this.primary = { kind: 'new', index: this.primary.index - 1 };
+                        }
+                    }
+
+                    this.syncFileInput();
+                },
+
+                syncFileInput() {
+                    const input = this.$refs.newFilesInput;
+                    if (!input) return;
+
+                    try {
+                        const dt = new DataTransfer();
+                        this.newFiles.forEach(f => dt.items.add(f.file));
+                        input.files = dt.files;
+                    } catch (e) {
+                        console.error('Could not sync file input:', e);
+                    }
+                },
+
+                // ---------- Attributes ----------
                 async loadAttributes() {
                     if (!this.categoryId) {
                         this.attributes = [];
@@ -743,7 +885,7 @@
 
                     try {
                         const res = await fetch(
-                            '{{ url("/admin/attributes/json") }}?category_id=' + encodeURIComponent(this.categoryId),
+                            '{{ url('/admin/attributes/json') }}?category_id=' + encodeURIComponent(this.categoryId),
                             { headers: { 'Accept': 'application/json' } }
                         );
 
@@ -757,56 +899,6 @@
                     } finally {
                         this.attributesLoading = false;
                     }
-                },
-
-                isPrimary(type, idx) {
-                    return this.primaryType === type && this.primaryIndex === idx;
-                },
-
-                setPrimary(type, idx) {
-                    this.primaryType = type;
-                    this.primaryIndex = idx;
-                },
-
-                removeExisting(idx) {
-                    this.existingImages[idx].removed = !this.existingImages[idx].removed;
-                },
-
-                removeNew(idx) {
-                    this.newFiles.splice(idx, 1);
-                    if (this.primaryType === 'new' && this.primaryIndex === idx) {
-                        this.primaryType = 'existing';
-                        this.primaryIndex = 0;
-                    }
-                },
-
-                onNewFilesSelected(event) {
-                    const files = Array.from(event.target.files);
-                    files.forEach(file => {
-                        if (file.size > 5 * 1024 * 1024) return;
-                        this.newFiles.push({
-                            id: Date.now() + Math.random(),
-                            file: file,
-                            name: file.name,
-                            url: URL.createObjectURL(file)
-                        });
-                    });
-                    event.target.value = '';
-                },
-
-                keptIndices() {
-                    return this.existingImages
-                        .map((img, idx) => img.removed ? -1 : idx)
-                        .filter(idx => idx >= 0);
-                },
-
-                primaryMergedIndex() {
-                    if (this.primaryType === 'existing') {
-                        const kept = this.keptIndices();
-                        const pos = kept.indexOf(this.primaryIndex);
-                        return pos >= 0 ? pos : 0;
-                    }
-                    return this.keptIndices().length + this.primaryIndex;
                 },
             }
         }
