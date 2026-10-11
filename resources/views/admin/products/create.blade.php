@@ -91,8 +91,19 @@
                                     <div class="sm:col-span-2">
                                         <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
                                         <textarea id="description" name="description" rows="6"
-                                            placeholder="Rich product description. HTML allowed."
-                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm">{{ old('description') }}</textarea>
+                                            placeholder="Rich description. Basic HTML supported: <p>, <br>, <strong>, <em>, <ul>, <li>, <h2>, <h3>, <a href='...'>."
+                                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm">{{ old('description', $product->description ?? '') }}</textarea>
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Basic HTML: <code class="bg-gray-100 px-1 rounded">&lt;p&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;br&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;strong&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;em&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;ul&gt;&lt;li&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;h2&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;h3&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;a href="..."&gt;</code>.
+                                            Scripts and event handlers are stripped for safety.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

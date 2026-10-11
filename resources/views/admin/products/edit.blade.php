@@ -64,7 +64,7 @@
     </x-slot>
 
     <!-- Main Content: Soft Cream Background -->
-    <div class="py-10 min-h-screen bg-[#F7F8F5] font-inter pb-32" x-data="productEditForm()">
+    <div class="py-10 min-h-screen bg-[#F7F8F5] font-inter pb-32" x-data="productEditForm()" x-init="init()">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @if ($errors->any())
@@ -173,7 +173,19 @@
                                     <div class="sm:col-span-2">
                                         <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
                                         <textarea id="description" name="description" rows="6"
-                                            class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-[#336A29] focus:ring-2 focus:ring-[#336A29]/30 font-mono text-sm">{{ old('description', $product->description) }}</textarea>
+                                            placeholder="Rich description. Basic HTML supported: <p>, <br>, <strong>, <em>, <ul>, <li>, <h2>, <h3>, <a href='...'>."
+                                            class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-[#336A29] focus:ring-2 focus:ring-[#336A29]/30 font-mono text-sm">{{ old('description', $product->description ?? '') }}</textarea>
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Basic HTML: <code class="bg-gray-100 px-1 rounded">&lt;p&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;br&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;strong&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;em&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;ul&gt;&lt;li&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;h2&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;h3&gt;</code>,
+                                            <code class="bg-gray-100 px-1 rounded">&lt;a href="..."&gt;</code>.
+                                            Scripts and event handlers are stripped for safety.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -651,7 +663,7 @@
                                             {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}
                                             class="rounded border-gray-300 text-yellow-500 shadow-sm focus:ring-yellow-500">
                                         <span class="text-sm text-gray-700 flex items-center gap-1">
-                                            <i class="fas fa-star text-yellow-500 text-xs"></i> Featured
+                                            <i class="fas fa-star text-yellow-500 text-xs"></i> Feature on homepage
                                         </span>
                                     </label>
 
@@ -661,7 +673,7 @@
                                             {{ old('is_verified', $product->is_verified) ? 'checked' : '' }}
                                             class="rounded border-gray-300 text-blue-500 shadow-sm focus:ring-blue-500">
                                         <span class="text-sm text-gray-700 flex items-center gap-1">
-                                            <i class="fas fa-shield-alt text-blue-500 text-xs"></i> Verified
+                                            <i class="fas fa-shield-alt text-blue-500 text-xs"></i> Verified product
                                         </span>
                                     </label>
 
@@ -678,15 +690,15 @@
 
                                 <button type="submit"
                                     :disabled="submitting"
-                                    class="w-full inline-flex items-center justify-center gap-2 bg-[#336A29] text-white px-6 py-3 rounded-lg hover:bg-[#285022] transition text-sm font-semibold disabled:opacity-60 shadow-sm">
-                                    <span x-show="!submitting"><i class="fas fa-save mr-1.5"></i> Update Product</span>
+                                    class="w-full inline-flex items-center justify-center gap-2 bg-[#336A29] text-white px-6 py-3 rounded-lg hover:bg-[#285022] transition text-sm font-semibold disabled:opacity-60">
+                                    <span x-show="!submitting"><i class="fas fa-save mr-1"></i> Update Product</span>
                                     <span x-show="submitting" x-cloak class="flex items-center gap-2">
                                         <i class="fas fa-circle-notch fa-spin"></i> Saving…
                                     </span>
                                 </button>
 
                                 <a href="{{ route('admin.products.index') }}"
-                                    class="block text-center text-sm text-gray-500 hover:text-gray-900 transition py-2">
+                                    class="block text-center text-sm text-gray-500 hover:text-gray-900 transition">
                                     Cancel
                                 </a>
                             </div>
@@ -696,190 +708,28 @@
                 </div>
             </form>
         </div>
-
-        {{-- ============ Floating Back Button (Bottom Center) ============ --}}
-        <a href="{{ route('admin.products.index') }}"
-           class="floating-back-btn fixed bottom-6 left-1/2 -translate-x-1/2 z-40
-                  inline-flex items-center gap-2
-                  bg-[#336A29] text-white
-                  px-6 py-3 rounded-full
-                  shadow-2xl shadow-[#336A29]/40
-                  hover:bg-[#285022] hover:scale-105
-                  focus:outline-none focus:ring-2 focus:ring-[#336A29] focus:ring-offset-2 focus:ring-offset-[#F7F8F5]
-                  transition-all duration-200
-                  text-sm font-semibold"
-           title="Back to Products">
-            <i class="fas fa-arrow-left text-sm"></i>
-            <span>Back to Products</span>
-        </a>
     </div>
 
     <script>
         function productEditForm() {
-            const normaliseImages = (raw) => {
-                if (typeof raw === 'string') {
-                    try { raw = JSON.parse(raw); } catch (e) { raw = []; }
-                }
-                if (!Array.isArray(raw)) raw = Object.values(raw || {});
-
-                const seenPaths = new Set();
-                const cleaned = [];
-
-                for (const img of raw) {
-                    if (!img) continue;
-                    const obj = (typeof img === 'string') ? { path: img } : { ...img };
-                    if (!obj.path || seenPaths.has(obj.path)) continue;
-                    seenPaths.add(obj.path);
-                    cleaned.push({ ...obj, removed: false });
-                }
-
-                return cleaned;
-            };
-
-            let fileCounter = 0;
-
             return {
-                categoryId: @json((string) old('category_id', $product->category_id)),
-                attributes: [],
+                categoryId: @json(old('category_id', $product->category_id)),
+                attributes: @json($attributes ?? []),
+                attrValues: @json($attributeValues ?? []),
                 attributesLoading: false,
                 submitting: false,
 
-                attrValues: @json($product->attributes ?? []),
-
-                existingImages: normaliseImages(@json($product->images ?? [])),
+                existingImages: @json($product->images->map(function($img, $idx) {
+                    return ['path' => $img->path, 'alt' => $img->alt ?? '', 'removed' => false];
+                })->values()->all()),
 
                 newFiles: [],
-
-                primary: null,
+                primaryType: 'existing',
+                primaryIndex: {{ $product->images->search(fn($img) => $img->is_primary) !== false ? $product->images->search(fn($img) => $img->is_primary) : 0 }},
 
                 init() {
-                    @if (!empty($product->primary_image))
-                        const primaryPath = @json($product->primary_image);
-                        const idx = this.existingImages.findIndex(img => img.path === primaryPath);
-                        if (idx !== -1) {
-                            this.primary = { kind: 'existing', index: idx };
-                        }
-                    @endif
-
-                    if (!this.primary && this.existingImages.length > 0) {
-                        this.primary = { kind: 'existing', index: 0 };
-                    }
-
                     if (this.categoryId) {
                         this.loadAttributes();
-                    }
-                },
-
-                removeExisting(idx) {
-                    const current = this.existingImages[idx];
-                    if (!current) return;
-
-                    current.removed = !current.removed;
-
-                    if (current.removed && this.primary?.kind === 'existing' && this.primary.index === idx) {
-                        this.primary = this.firstAvailablePrimary();
-                    }
-
-                    if (!current.removed && !this.primary) {
-                        this.primary = { kind: 'existing', index: idx };
-                    }
-                },
-
-                keptIndices() {
-                    const kept = [];
-                    this.existingImages.forEach((img, i) => {
-                        if (!img.removed) kept.push(i);
-                    });
-                    return kept;
-                },
-
-                firstAvailablePrimary() {
-                    const firstKeptExisting = this.existingImages.findIndex(i => !i.removed);
-                    if (firstKeptExisting !== -1) {
-                        return { kind: 'existing', index: firstKeptExisting };
-                    }
-                    if (this.newFiles.length > 0) {
-                        return { kind: 'new', index: 0 };
-                    }
-                    return null;
-                },
-
-                isPrimary(kind, index) {
-                    return !!this.primary && this.primary.kind === kind && this.primary.index === index;
-                },
-
-                setPrimary(kind, index) {
-                    this.primary = { kind, index };
-                },
-
-                primaryMergedIndex() {
-                    if (!this.primary) return 0;
-
-                    const keptCount = this.existingImages.filter(i => !i.removed).length;
-
-                    if (this.primary.kind === 'existing') {
-                        let pos = 0;
-                        for (let i = 0; i < this.existingImages.length; i++) {
-                            if (i === this.primary.index) break;
-                            if (!this.existingImages[i].removed) pos++;
-                        }
-                        return pos;
-                    }
-
-                    if (this.primary.kind === 'new') {
-                        return keptCount + this.primary.index;
-                    }
-
-                    return 0;
-                },
-
-                onNewFilesSelected(event) {
-                    const files = Array.from(event.target.files || []);
-
-                    for (const file of files) {
-                        this.newFiles.push({
-                            id: ++fileCounter,
-                            url: URL.createObjectURL(file),
-                            name: file.name,
-                            file: file,
-                        });
-                    }
-
-                    if (!this.primary && this.newFiles.length > 0) {
-                        this.primary = { kind: 'new', index: 0 };
-                    }
-
-                    this.syncFileInput();
-                },
-
-                removeNew(idx) {
-                    const item = this.newFiles[idx];
-                    if (!item) return;
-
-                    URL.revokeObjectURL(item.url);
-                    this.newFiles.splice(idx, 1);
-
-                    if (this.primary?.kind === 'new') {
-                        if (this.primary.index === idx) {
-                            this.primary = this.firstAvailablePrimary();
-                        } else if (this.primary.index > idx) {
-                            this.primary = { kind: 'new', index: this.primary.index - 1 };
-                        }
-                    }
-
-                    this.syncFileInput();
-                },
-
-                syncFileInput() {
-                    const input = this.$refs.newFilesInput;
-                    if (!input) return;
-
-                    try {
-                        const dt = new DataTransfer();
-                        this.newFiles.forEach(f => dt.items.add(f.file));
-                        input.files = dt.files;
-                    } catch (e) {
-                        console.error('Could not sync file input:', e);
                     }
                 },
 
@@ -893,7 +743,7 @@
 
                     try {
                         const res = await fetch(
-                            '{{ url('/admin/attributes/json') }}?category_id=' + encodeURIComponent(this.categoryId),
+                            '{{ url("/admin/attributes/json") }}?category_id=' + encodeURIComponent(this.categoryId),
                             { headers: { 'Accept': 'application/json' } }
                         );
 
@@ -907,6 +757,56 @@
                     } finally {
                         this.attributesLoading = false;
                     }
+                },
+
+                isPrimary(type, idx) {
+                    return this.primaryType === type && this.primaryIndex === idx;
+                },
+
+                setPrimary(type, idx) {
+                    this.primaryType = type;
+                    this.primaryIndex = idx;
+                },
+
+                removeExisting(idx) {
+                    this.existingImages[idx].removed = !this.existingImages[idx].removed;
+                },
+
+                removeNew(idx) {
+                    this.newFiles.splice(idx, 1);
+                    if (this.primaryType === 'new' && this.primaryIndex === idx) {
+                        this.primaryType = 'existing';
+                        this.primaryIndex = 0;
+                    }
+                },
+
+                onNewFilesSelected(event) {
+                    const files = Array.from(event.target.files);
+                    files.forEach(file => {
+                        if (file.size > 5 * 1024 * 1024) return;
+                        this.newFiles.push({
+                            id: Date.now() + Math.random(),
+                            file: file,
+                            name: file.name,
+                            url: URL.createObjectURL(file)
+                        });
+                    });
+                    event.target.value = '';
+                },
+
+                keptIndices() {
+                    return this.existingImages
+                        .map((img, idx) => img.removed ? -1 : idx)
+                        .filter(idx => idx >= 0);
+                },
+
+                primaryMergedIndex() {
+                    if (this.primaryType === 'existing') {
+                        const kept = this.keptIndices();
+                        const pos = kept.indexOf(this.primaryIndex);
+                        return pos >= 0 ? pos : 0;
+                    }
+                    return this.keptIndices().length + this.primaryIndex;
                 },
             }
         }

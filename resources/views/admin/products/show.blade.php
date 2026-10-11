@@ -103,7 +103,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {{-- LEFT: Images + Content --}}
+                {{-- LEFT --}}
                 <div class="lg:col-span-2 space-y-6">
 
                     {{-- Images --}}
@@ -153,8 +153,14 @@
                             @endif
 
                             @if ($product->description)
-                                <div class="text-sm text-gray-700 prose prose-sm max-w-none">
-                                    {!! nl2br(e($product->description)) !!}
+                                <div class="text-sm text-gray-700 prose prose-sm max-w-none
+                                            prose-headings:font-semibold prose-headings:text-gray-900
+                                            prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5
+                                            prose-strong:text-gray-900 prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline">
+                                    {!! strip_tags(
+                                        $product->description,
+                                        '<p><br><br/><strong><b><em><i><u><s><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><code><pre><hr><a><img><table><thead><tbody><tr><th><td><span><small><sup><sub>'
+                                    ) !!}
                                 </div>
                             @else
                                 <p class="text-sm text-gray-400 italic">No description.</p>
@@ -256,7 +262,7 @@
 
                 </div>
 
-                {{-- RIGHT: Sidebar --}}
+                {{-- RIGHT --}}
                 <div class="lg:col-span-1 space-y-6">
 
                     {{-- Status --}}

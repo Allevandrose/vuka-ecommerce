@@ -250,14 +250,12 @@
                                  @keydown.enter.prevent="open()"
                                  aria-label="Open image full screen">
 
-                                {{-- Full image, never cropped --}}
                                 <img :src="active"
                                      alt="{{ $product->name }}"
                                      class="absolute inset-0 w-full h-full object-contain p-3 sm:p-5 transition-opacity duration-200"
                                      :class="lens ? 'opacity-0' : 'opacity-100'"
                                      draggable="false">
 
-                                {{-- Hover zoom layer --}}
                                 <div x-show="lens" x-cloak
                                      class="absolute inset-0 bg-white bg-no-repeat pointer-events-none"
                                      :style="`background-image:url('${active}');background-size:220%;background-position:${lensX}% ${lensY}%`"></div>
@@ -444,7 +442,7 @@
                 </span>
             </div>
 
-            {{-- Add to cart (shares state with the gallery component) --}}
+            {{-- Add to cart --}}
             <div class="space-y-3 pt-2">
                 @if ($product->inStock())
                     <div class="flex items-center gap-3">
@@ -509,7 +507,7 @@
                 </div>
             </div>
 
-            {{-- Vendor card (if vendor product) --}}
+            {{-- Vendor card --}}
             @if ($product->isVendorProduct() && $product->source)
                 <div class="bg-white border border-line rounded-2xl p-4 flex items-center gap-3">
                     <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
@@ -546,7 +544,6 @@
                  @pointerup.window="dragEnd()"
                  @pointercancel.window="dragEnd()">
 
-                {{-- Top bar --}}
                 <div class="flex items-center justify-between px-4 sm:px-6 py-3 text-white shrink-0">
                     <div class="min-w-0">
                         <p class="text-sm font-semibold truncate">{{ $product->name }}</p>
@@ -571,7 +568,6 @@
                     </div>
                 </div>
 
-                {{-- Stage --}}
                 <div class="relative flex-1 min-h-0 overflow-hidden flex items-center justify-center"
                      @click.self="close()"
                      @wheel.prevent="wheelZoom($event)">
@@ -599,7 +595,6 @@
                     </template>
                 </div>
 
-                {{-- Bottom thumbnails --}}
                 <div class="shrink-0 px-4 py-3 flex flex-col items-center gap-2">
                     <div class="flex gap-2 overflow-x-auto no-scrollbar max-w-full" x-show="multiple">
                         <template x-for="(img, i) in images" :key="'l' + i">
@@ -645,10 +640,19 @@
             </button>
         </div>
 
-        {{-- DESCRIPTION TAB --}}
+        {{-- DESCRIPTION TAB — now renders sanitized HTML --}}
         <div x-show="tab === 'description'" class="p-5 sm:p-6">
             @if ($product->description)
-                <div class="prose prose-sm max-w-3xl text-ink/80 leading-relaxed whitespace-pre-line">{{ $product->description }}</div>
+                <div class="prose prose-sm max-w-3xl text-ink/80 leading-relaxed
+                            prose-headings:font-serif prose-headings:text-ink
+                            prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1
+                            prose-strong:text-ink prose-a:text-moss prose-a:no-underline hover:prose-a:underline
+                            prose-img:rounded-xl prose-img:my-4">
+                    {!! strip_tags(
+                        $product->description,
+                        '<p><br><br/><strong><b><em><i><u><s><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><code><pre><hr><a><img><table><thead><tbody><tr><th><td><span><small><sup><sub>'
+                    ) !!}
+                </div>
             @else
                 <p class="text-sm text-muted italic">No description provided.</p>
             @endif
@@ -673,7 +677,6 @@
                         @endif
                     @endforeach
 
-                    {{-- Orphaned attributes (keys not in definitions) --}}
                     @foreach ($productAttrs as $key => $value)
                         @if (!$attributeDefinitions->contains('key', $key))
                             <div class="flex items-baseline justify-between gap-4 py-2.5 border-b border-line/60">
@@ -691,16 +694,12 @@
         </div>
     </div>
 
-    {{-- ============================================ --}}
-    {{-- REVIEWS SECTION (read-only for now) --}}
-    {{-- ============================================ --}}
+    {{-- REVIEWS --}}
     <div id="reviews" class="scroll-mt-24">
         @include('shop.partials.product-reviews', ['product' => $product])
     </div>
 
-    {{-- ============================================ --}}
-    {{-- RELATED PRODUCTS --}}
-    {{-- ============================================ --}}
+    {{-- RELATED --}}
     @if ($related->isNotEmpty())
         <section class="mb-12 mt-10">
             <div class="flex items-baseline justify-between mb-4">
