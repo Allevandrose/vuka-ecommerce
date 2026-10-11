@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -16,9 +16,6 @@ class CategoryController extends Controller
      */
     public function index(): View
     {
-        // Load top-level categories with eager-loaded children (2 levels deep).
-        // For deeper trees, we could recursively load, but 2 levels covers
-        // the vast majority of cases and keeps this fast.
         $categories = Category::with(['children' => function ($q) {
             $q->orderBy('sort_order')->orderBy('name');
         }])
@@ -36,7 +33,9 @@ class CategoryController extends Controller
     {
         $parents = Category::topLevel()->ordered()->get();
 
-        return view('admin.categories.create', compact('parents'));
+        $gradientPresets = $this->collectGradientPresets();
+
+        return view('admin.categories.create', compact('parents', 'gradientPresets'));
     }
 
     /**
@@ -68,7 +67,9 @@ class CategoryController extends Controller
             ->ordered()
             ->get();
 
-        return view('admin.categories.edit', compact('category', 'parents'));
+        $gradientPresets = $this->collectGradientPresets();
+
+        return view('admin.categories.edit', compact('category', 'parents', 'gradientPresets'));
     }
 
     /**
@@ -104,7 +105,7 @@ class CategoryController extends Controller
         }
 
         $name = $category->name;
-        $category->delete();   // children auto-reparent to null via nullOnDelete FK
+        $category->delete();
 
         return redirect()
             ->route('admin.categories.index')
@@ -112,12 +113,9 @@ class CategoryController extends Controller
     }
 
     // ============================================
-    // HELPERS
+    // HELPERS — validation
     // ============================================
 
-    /**
-     * Shared validation rules.
-     */
     protected function validateCategory(Request $request, ?Category $existing = null): array
     {
         $rules = [
@@ -154,17 +152,13 @@ class CategoryController extends Controller
                 'accent_gradient_css',
                 'meta_title',
                 'meta_description',
-                'meta_keywords'
+                'meta_keywords',
             ] as $field
         ) {
             if (isset($validated[$field]) && $validated[$field] === '') {
                 $validated[$field] = null;
             }
         }
-
-        // If no slug provided, model auto-generates on create.
-        // On update, if name changed, model regenerates the slug.
-        // We deliberately don't accept a manual slug from the form.
 
         return $validated;
     }
@@ -182,5 +176,66 @@ class CategoryController extends Controller
         }
 
         return $ids;
+    }
+
+    // ============================================
+    // HELPERS — gradient presets
+    // ============================================
+
+    /**
+     * Build the full list of gradient presets available on the create/edit forms.
+     *
+     * Sources (in order, deduplicated by CSS string):
+     *   1. Seeded presets from `settings.gradient_presets`
+     *   2. Any distinct `gradient_css` already saved on any category (labelled "Custom")
+     *
+     * Returns an array of ['name' => string, 'css' => string].
+     */
+    protected function collectGradientPresets(): array
+    {
+        $seeded = Setting::get('gradient_presets', []);
+        if (!is_array($seeded)) {
+            $seeded = [];
+        }
+
+        $custom = Category::query()
+            ->whereNotNull('gradient_css')
+            ->where('gradient_css', '!=', '')
+            ->pluck('gradient_css')
+            ->unique()
+            ->values()
+            ->all();
+
+        $presets = [];
+        $seenCss = [];
+
+        foreach ($seeded as $preset) {
+            if (!is_array($preset) || empty($preset['css'])) {
+                continue;
+            }
+            $css = trim((string) $preset['css']);
+            if ($css === '' || isset($seenCss[$css])) {
+                continue;
+            }
+            $seenCss[$css] = true;
+            $presets[] = [
+                'name' => $preset['name'] ?? 'Preset',
+                'css' => $css,
+            ];
+        }
+
+        foreach ($custom as $css) {
+            $css = trim((string) $css);
+            if ($css === '' || isset($seenCss[$css])) {
+                continue;
+            }
+            $seenCss[$css] = true;
+            $presets[] = [
+                'name' => 'Custom',
+                'css' => $css,
+            ];
+        }
+
+        return $presets;
     }
 }

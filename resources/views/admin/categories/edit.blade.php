@@ -98,7 +98,12 @@
                                 <input id="icon" name="icon" type="text"
                                     x-model="icon"
                                     value="{{ old('icon', $category->icon) }}"
+                                    placeholder="fa-microchip"
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm">
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Preview: <i class="fas" :class="icon || 'fa-question'"></i>
+                                    <span class="font-mono" x-text="icon || 'fa-question'"></span>
+                                </p>
                             </div>
 
                             <div>
@@ -141,39 +146,75 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Hero Background Gradient
-                            </label>
-                            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
-                                <template x-for="preset in presets" :key="preset.name">
+                        {{-- HERO GRADIENT --}}
+                        <div x-data="{ showPresets: true }">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Hero Background Gradient
+                                    <span class="text-gray-400 font-normal text-xs ml-1">
+                                        ({{ count($gradientPresets) }} presets available)
+                                    </span>
+                                </label>
+                                <button type="button"
+                                    @click="showPresets = !showPresets"
+                                    class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">
+                                    <i class="fas text-[10px] mr-1"
+                                        :class="showPresets ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                    <span x-text="showPresets ? 'Hide presets' : 'Show presets'"></span>
+                                </button>
+                            </div>
+
+                            <div x-show="showPresets" x-cloak
+                                x-transition:enter="transition ease-out duration-150"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
+
+                                <template x-for="(preset, idx) in presets" :key="'preset-' + idx">
                                     <button type="button"
                                         @click="gradientCss = preset.css"
                                         :title="preset.name"
                                         :class="gradientCss === preset.css ? 'ring-2 ring-indigo-500 ring-offset-2' : 'ring-1 ring-gray-200'"
-                                        class="h-12 rounded-lg shadow-sm transition"
+                                        class="h-12 rounded-lg shadow-sm transition hover:scale-105"
                                         :style="`background: ${preset.css};`"></button>
                                 </template>
+
+                                <div x-show="presets.length === 0" class="col-span-full text-center text-xs text-gray-400 py-4">
+                                    No presets yet. Paste a CSS gradient below.
+                                </div>
                             </div>
+
                             <textarea id="gradient_css" name="gradient_css" rows="2"
                                 x-model="gradientCss"
+                                placeholder="e.g. linear-gradient(135deg, #14231C 0%, #20503C 100%)"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-xs">{{ old('gradient_css', $category->gradient_css) }}</textarea>
-                            <div class="mt-2">
+
+                            <div class="mt-2 flex items-center gap-3">
                                 <button type="button" @click="gradientCss = ''" class="text-xs text-red-600 hover:text-red-800">
-                                    Clear gradient
+                                    <i class="fas fa-times text-[10px] mr-1"></i> Clear gradient
+                                </button>
+                                <button type="button" @click="showPresets = !showPresets" x-show="!showPresets"
+                                    class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                    <i class="fas fa-eye text-[10px] mr-1"></i> Show presets
                                 </button>
                             </div>
-                            <div class="mt-3 h-24 rounded-lg border border-gray-200 flex items-center justify-center text-white text-lg font-semibold shadow-sm"
-                                :style="`background: ${gradientCss || primaryColor};`">
-                                <span x-text="name || '{{ $category->name }}'"></span>
+
+                            <div class="mt-3">
+                                <p class="text-xs text-gray-500 mb-1">Preview:</p>
+                                <div class="h-24 rounded-lg border border-gray-200 flex items-center justify-center text-white text-lg font-semibold shadow-sm"
+                                    :style="`background: ${gradientCss || primaryColor};`">
+                                    <span x-text="name || '{{ $category->name }}'"></span>
+                                </div>
                             </div>
                         </div>
 
+                        {{-- ACCENT GRADIENT --}}
                         <div>
                             <label for="accent_gradient_css" class="block text-sm font-medium text-gray-700 mb-1">
-                                Accent Gradient
+                                Accent Gradient <span class="text-gray-400 font-normal text-xs">(optional — for buttons/borders)</span>
                             </label>
                             <textarea id="accent_gradient_css" name="accent_gradient_css" rows="2"
+                                placeholder="Paste a CSS gradient to use for buttons and accents"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-xs">{{ old('accent_gradient_css', $category->accent_gradient_css) }}</textarea>
                         </div>
                     </div>
@@ -236,7 +277,7 @@
                     </div>
                 </div>
 
-                {{-- Actions --}}
+                {{-- ACTIONS --}}
                 <div class="flex items-center justify-between gap-3 mb-10 flex-wrap">
                     <div class="text-xs text-gray-500">
                         Created {{ $category->created_at->format('M d, Y') }}
@@ -252,7 +293,7 @@
                             :disabled="submitting"
                             class="inline-flex items-center gap-2 bg-[#1E3C2C] text-white px-6 py-2 rounded-lg hover:bg-[#143023] transition text-sm font-semibold disabled:opacity-60">
                             <span x-show="!submitting">Update Category</span>
-                            <span x-show="submitting" class="flex items-center gap-2">
+                            <span x-show="submitting" x-cloak class="flex items-center gap-2">
                                 <i class="fas fa-circle-notch fa-spin"></i> Saving…
                             </span>
                         </button>
@@ -262,19 +303,17 @@
         </div>
     </div>
 
-    @push('scripts')
     <script>
         function categoryForm() {
             return {
-                name: '{{ old('name', $category->name) }}',
-                icon: '{{ old('icon', $category->icon) }}',
-                primaryColor: '{{ old('primary_color', $category->primary_color ?? '#1E3C2C') }}',
-                accentColor: '{{ old('accent_color', $category->accent_color ?? '#E7A93B') }}',
-                gradientCss: '{{ old('gradient_css', $category->gradient_css) }}',
+                name: @json(old('name', $category->name)),
+                icon: @json(old('icon', $category->icon)),
+                primaryColor: @json(old('primary_color', $category->primary_color ?? '#1E3C2C')),
+                accentColor: @json(old('accent_color', $category->accent_color ?? '#E7A93B')),
+                gradientCss: @json(old('gradient_css', $category->gradient_css)),
                 submitting: false,
-                presets: @json(\App\Models\Setting::get('gradient_presets', [])),
+                presets: @json($gradientPresets ?? []),
             }
         }
     </script>
-    @endpush
 </x-app-layout>
