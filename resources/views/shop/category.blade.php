@@ -68,6 +68,26 @@
         @media (prefers-reduced-motion: reduce) {
             .cat-page * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
         }
+
+        /* ---- Remove outline / ring / border from search inputs ---- */
+        .search-input,
+        input[type="text"][name="q"] {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .search-input:focus,
+        .search-input:focus-visible,
+        input[type="text"][name="q"]:focus,
+        input[type="text"][name="q"]:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            --tw-ring-shadow: 0 0 #0000 !important;
+            --tw-ring-offset-shadow: 0 0 #0000 !important;
+        }
     </style>
 
     <div class="cat-page"
