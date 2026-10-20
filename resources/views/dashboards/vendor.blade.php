@@ -17,13 +17,53 @@
                                 Welcome back, {{ Auth::user()->name }}! 👋
                             </h3>
                             <p class="mt-1 text-sm text-gray-500">
-                                Your vendor account is active. Products and orders coming soon.
+                                @if (Auth::user()->is_active && Auth::user()->approved_at)
+                                    Your vendor account is active.
+                                    @php $totalProducts = Auth::user()->products()->count(); @endphp
+                                    You have <strong class="text-gray-900">{{ $totalProducts }}</strong>
+                                    {{ Str::plural('product', $totalProducts) }} in your catalog.
+                                @else
+                                    Your vendor account is pending activation.
+                                @endif
                             </p>
                         </div>
                         <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
                             Vendor
                         </span>
                     </div>
+                </div>
+            </div>
+
+            {{-- Quick stats --}}
+            @php
+                $vendor = Auth::user();
+                $stats = [
+                    'active' => $vendor->products()->where('status', 'active')->count(),
+                    'pending' => $vendor->products()->where('status', 'pending_review')->count(),
+                    'rejected' => $vendor->products()->where('status', 'rejected')->count(),
+                    'draft' => $vendor->products()->where('status', 'draft')->count(),
+                ];
+                $cap = $vendor->productLimit();
+                $used = $vendor->productCount();
+                $canAdd = $vendor->canCreateProduct();
+            @endphp
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Active</p>
+                    <p class="text-2xl font-semibold text-green-600 mt-1">{{ $stats['active'] }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Pending</p>
+                    <p class="text-2xl font-semibold text-yellow-600 mt-1">{{ $stats['pending'] }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Rejected</p>
+                    <p class="text-2xl font-semibold text-red-600 mt-1">{{ $stats['rejected'] }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Drafts</p>
+                    <p class="text-2xl font-semibold text-gray-600 mt-1">{{ $stats['draft'] }}</p>
                 </div>
             </div>
 
@@ -75,22 +115,58 @@
                 </div>
             </div>
 
-            {{-- Coming Soon Cards --}}
+            {{-- Action Cards --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-2 border-dashed border-gray-200">
+
+                {{-- Products (LIVE) --}}
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-2 border-emerald-200 hover:shadow-md transition">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h4 class="text-lg font-semibold text-gray-900">📦 Products</h4>
-                            <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                Soon
+                            <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                                {{ $used }} / {{ $cap }}
                             </span>
                         </div>
-                        <p class="text-sm text-gray-500">
-                            List products you want to sell on Vuka Shop.
+                        <p class="text-sm text-gray-500 mb-4">
+                            Manage your product listings, track review status, and add new products.
                         </p>
+
+                        {{-- Product cap indicator --}}
+                        <div class="mb-4">
+                            <div class="flex justify-between text-[11px] text-gray-500 mb-1">
+                                <span>Product slots</span>
+                                <span>{{ $used }} of {{ $cap }} used</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all
+                                    @if ($used >= $cap) bg-red-500
+                                    @elseif ($used >= $cap * 0.8) bg-amber-500
+                                    @else bg-emerald-500 @endif"
+                                    style="width: {{ $cap > 0 ? min(100, ($used / $cap) * 100) : 0 }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ route('vendor.products.index') }}"
+                                class="inline-flex items-center gap-2 bg-[#1E3C2C] text-white px-4 py-2 rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-[#143023] transition">
+                                Manage Products
+                            </a>
+                            @if ($canAdd)
+                                <a href="{{ route('vendor.products.create') }}"
+                                    class="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-md font-semibold text-xs uppercase tracking-widest hover:bg-emerald-700 transition">
+                                    + Add New
+                                </a>
+                            @else
+                                <span class="inline-flex items-center gap-2 bg-gray-200 text-gray-500 px-4 py-2 rounded-md font-semibold text-xs uppercase tracking-widest cursor-not-allowed"
+                                    title="You've reached your product limit ({{ $cap }}).">
+                                    Limit Reached
+                                </span>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
+                {{-- Orders (Still coming soon) --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-2 border-dashed border-gray-200">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
@@ -105,6 +181,7 @@
                     </div>
                 </div>
 
+                {{-- Analytics (Still coming soon) --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border-2 border-dashed border-gray-200">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
@@ -118,6 +195,7 @@
                         </p>
                     </div>
                 </div>
+
             </div>
 
         </div>

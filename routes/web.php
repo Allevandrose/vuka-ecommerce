@@ -14,6 +14,7 @@ use App\Http\Controllers\Shop\CategoryController;
 use App\Http\Controllers\Shop\HomeController;
 use App\Http\Controllers\Shop\ProductController;
 use App\Http\Controllers\Shop\SearchController;
+use App\Http\Controllers\Vendor\ProductController as VendorProductController;
 use App\Http\Controllers\VendorApplicationController;
 use App\Http\Controllers\VendorRegistrationController;
 use App\Models\User;
@@ -108,6 +109,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin/attributes')->name('admin.at
 // ============================================
 Route::middleware(['auth', 'admin'])->prefix('admin/products')->name('admin.products.')->group(function () {
     Route::get('/', [AdminProductController::class, 'index'])->name('index');
+    Route::get('/pending', [AdminProductController::class, 'pending'])->name('pending');                  // ← NEW
+    Route::post('/bulk-approve', [AdminProductController::class, 'bulkApprove'])->name('bulkApprove');  // ← NEW
     Route::get('/create', [AdminProductController::class, 'create'])->name('create');
     Route::post('/', [AdminProductController::class, 'store'])->name('store');
 
@@ -153,6 +156,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin/vendors')->name('admin.vendo
     Route::post('/user/{user}/activate', [VendorManagementController::class, 'activate'])->name('user.activate');
     Route::post('/user/{user}/deactivate', [VendorManagementController::class, 'deactivate'])->name('user.deactivate');
     Route::delete('/user/{user}', [VendorManagementController::class, 'destroy'])->name('user.destroy');
+});
+
+// ============================================
+// VENDOR — PRODUCTS
+// ============================================
+Route::middleware(['auth', 'vendor'])->prefix('vendor/products')->name('vendor.products.')->group(function () {
+    Route::get('/', [VendorProductController::class, 'index'])->name('index');
+    Route::get('/create', [VendorProductController::class, 'create'])->name('create');
+    Route::post('/', [VendorProductController::class, 'store'])->name('store');
+    Route::get('/{product}/edit', [VendorProductController::class, 'edit'])->name('edit');
+    Route::put('/{product}', [VendorProductController::class, 'update'])->name('update');
+    Route::delete('/{product}', [VendorProductController::class, 'destroy'])->name('destroy');
 });
 
 // ============================================

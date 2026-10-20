@@ -48,6 +48,9 @@
                             <x-nav-link :href="route('vendor.dashboard')" :active="request()->routeIs('vendor.dashboard')">
                                 {{ __('My Shop') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('vendor.products.index')" :active="request()->routeIs('vendor.products.*')">
+                                {{ __('My Products') }}
+                            </x-nav-link>
                         @endif
                     @endauth
                 </div>
@@ -140,6 +143,9 @@
                 @if(auth()->user()->isVendor())
                     <x-responsive-nav-link :href="route('vendor.dashboard')" :active="request()->routeIs('vendor.dashboard')">
                         {{ __('My Shop') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('vendor.products.index')" :active="request()->routeIs('vendor.products.*')">
+                        {{ __('My Products') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth

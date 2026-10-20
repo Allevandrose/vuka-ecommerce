@@ -89,6 +89,103 @@ class ProductController extends Controller
     }
 
     // ============================================
+    // PENDING REVIEW QUEUE
+    // ============================================
+
+    /**
+     * Vendor product approval queue.
+     * Shows all products awaiting admin review, grouped by vendor.
+     */
+    public function pending(Request $request): View
+    {
+        $query = Product::query()
+            ->where('status', 'pending_review')
+            ->with(['category', 'brand', 'source']);
+
+        // Optional source filter
+        if ($source = $request->input('source')) {
+            if (in_array($source, ['admin', 'vendor'], true)) {
+                $query->where('source_type', $source);
+            }
+        }
+
+        // Optional vendor filter
+        if ($vendorId = $request->input('vendor')) {
+            $query->where('source_type', 'vendor')->where('source_id', $vendorId);
+        }
+
+        // Optional search
+        if ($search = $request->input('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        $products = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
+
+        // Group by vendor for easier batch review
+        $groupedByVendor = $products->getCollection()
+            ->groupBy(function ($product) {
+                return $product->source_type === 'vendor'
+                    ? ('vendor-' . ($product->source_id ?? 0))
+                    : 'admin';
+            });
+
+        // Vendors with pending products (for the filter dropdown)
+        $vendors = \App\Models\User::where('user_type', 'vendor')
+            ->whereHas('products', fn($q) => $q->where('status', 'pending_review'))
+            ->orderBy('name')
+            ->get();
+
+        $stats = [
+            'total' => Product::where('status', 'pending_review')->count(),
+            'vendor' => Product::where('status', 'pending_review')->where('source_type', 'vendor')->count(),
+            'admin' => Product::where('status', 'pending_review')->where('source_type', 'admin')->count(),
+        ];
+
+        return view('admin.products.pending', compact(
+            'products',
+            'groupedByVendor',
+            'vendors',
+            'stats'
+        ));
+    }
+
+    /**
+     * Bulk approve — admin selects multiple pending products at once.
+     */
+    public function bulkApprove(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        $approved = 0;
+        $skipped = 0;
+
+        foreach ($validated['product_ids'] as $id) {
+            $product = Product::find($id);
+            if (!$product || $product->status !== 'pending_review') {
+                $skipped++;
+                continue;
+            }
+            $product->approve();
+            $approved++;
+        }
+
+        $message = "Approved {$approved} product" . ($approved === 1 ? '' : 's') . ".";
+        if ($skipped > 0) {
+            $message .= " Skipped {$skipped} (not in pending state).";
+        }
+
+        return redirect()
+            ->route('admin.products.pending')
+            ->with('success', $message);
+    }
+
+    // ============================================
     // CREATE
     // ============================================
 
@@ -283,6 +380,19 @@ class ProductController extends Controller
 
         $product->approve();
 
+        // Notify the vendor (only for vendor products)
+        if ($product->isVendorProduct() && $product->source) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($product->source->email)
+                    ->send(new \App\Mail\VendorProductApproved($product));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send approval email: ' . $e->getMessage(), [
+                    'product_id' => $product->id,
+                    'vendor_email' => $product->source->email,
+                ]);
+            }
+        }
+
         return back()->with('success', "Product \"{$product->name}\" approved and is now live.");
     }
 
@@ -298,6 +408,19 @@ class ProductController extends Controller
         }
 
         $product->reject($reason);
+
+        // Notify the vendor (only for vendor products)
+        if ($product->isVendorProduct() && $product->source) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($product->source->email)
+                    ->send(new \App\Mail\VendorProductRejected($product, $reason));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send rejection email: ' . $e->getMessage(), [
+                    'product_id' => $product->id,
+                    'vendor_email' => $product->source->email,
+                ]);
+            }
+        }
 
         return back()->with('success', "Product \"{$product->name}\" rejected.");
     }
@@ -510,7 +633,6 @@ class ProductController extends Controller
             $filename = Str::uuid() . '.' . strtolower($extension);
             $path = $file->storeAs('products', $filename, 'public');
 
-            // Skip duplicates within this batch
             if (isset($seenPaths[$path])) {
                 continue;
             }
@@ -544,31 +666,15 @@ class ProductController extends Controller
 
     /**
      * Reconcile the product's existing images with the submitted form state.
-     *
-     * Contract:
-     *   - `images_submitted=1` is sent ONLY by the edit form's images section.
-     *     If absent, we leave the product's images untouched (return null).
-     *   - `kept_image_indices[]` lists the indices (into the product's OLD
-     *     images array) that the admin chose to keep.
-     *   - `image_files[]` are new files to append.
-     *   - `primary_image_index` is the index in the MERGED array
-     *     (kept existing first, then new uploads) that should be the primary.
-     *
-     * Safety:
-     *   - Deduplicates by path (kills any historical duplicates in the DB).
-     *   - Skips duplicated uploads within the same request.
-     *   - Deletes files on disk that are no longer referenced.
      */
     protected function mergeImageState(Request $request, Product $product): ?array
     {
-        // Explicit "the images section was submitted" flag.
         if (!$request->boolean('images_submitted')) {
             return null;
         }
 
         $oldImages = $product->images ?? [];
 
-        // Normalise kept indices: integers, deduped, validated against old array.
         $keptIndices = collect($request->input('kept_image_indices', []))
             ->map(fn($i) => (int) $i)
             ->filter(fn($i) => isset($oldImages[$i]))
@@ -576,7 +682,6 @@ class ProductController extends Controller
             ->values()
             ->all();
 
-        // Build the kept list, deduplicating by path.
         $kept = [];
         $seenPaths = [];
         foreach ($keptIndices as $idx) {
@@ -588,7 +693,6 @@ class ProductController extends Controller
             $kept[] = $oldImages[$idx];
         }
 
-        // Upload new files, skipping any that collide with an already-kept path.
         $uploaded = [];
         $newFiles = $request->file('image_files') ?? [];
 
@@ -602,7 +706,6 @@ class ProductController extends Controller
             $path = $file->storeAs('products', $filename, 'public');
 
             if (isset($seenPaths[$path])) {
-                // Collision with an already-kept path — skip.
                 continue;
             }
             $seenPaths[$path] = true;
@@ -614,13 +717,11 @@ class ProductController extends Controller
             ];
         }
 
-        // Merge and reindex sort.
         $merged = array_values(array_merge($kept, $uploaded));
         foreach ($merged as $i => $img) {
             $merged[$i]['sort'] = $i;
         }
 
-        // Primary.
         $primaryIndex = $request->input('primary_image_index');
         $primaryPath = null;
 
@@ -630,7 +731,6 @@ class ProductController extends Controller
             $primaryPath = $merged[0]['path'];
         }
 
-        // Delete files no longer referenced.
         $this->deleteOrphanedImages($oldImages, $merged);
 
         return [

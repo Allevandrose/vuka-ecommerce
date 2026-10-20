@@ -11,6 +11,9 @@
         'attributes' => Attribute::count(),
     ];
 
+    // Calculate Pending Products for the Dashboard Tile
+    $pendingProducts = Product::where('status', 'pending_review')->count();
+
     $staffTotal = User::whereIn('user_type', $staffTypes)->count();
     $staffActive = User::whereIn('user_type', $staffTypes)->where('is_active', true)->count();
     $staffInactive = User::whereIn('user_type', $staffTypes)->where('is_active', false)->count();
@@ -58,6 +61,8 @@
 
     // Tiles
     $tiles = [
+        // Note: The 'count' key here is used by the default tile template, 
+        // but we will override the Products tile HTML below to use the new design.
         ['name' => 'Products', 'sub' => 'manage your catalog', 'href' => route('admin.products.index'), 'icon' => 'products', 'count' => $counts['products'], 'bg' => 'bg-[#068562] hover:bg-[#0a9e75]'],
         ['name' => 'Categories', 'sub' => 'organize products', 'href' => route('admin.categories.index'), 'icon' => 'categories', 'count' => $counts['categories'], 'bg' => 'bg-[#013F4A] hover:bg-[#024e5c]'],
         ['name' => 'Brands', 'sub' => 'brand partners', 'href' => route('admin.brands.index'), 'icon' => 'brands', 'count' => $counts['brands'], 'bg' => 'bg-[#013F4A] hover:bg-[#024e5c]'],
@@ -202,26 +207,70 @@
                     <section class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             @foreach ($tiles as $tile)
-                                <a href="{{ $tile['href'] }}"
-                                   x-show="!q || '{{ strtolower($tile['name'] . ' ' . $tile['sub']) }}'.includes(q.toLowerCase())"
-                                   class="group relative flex aspect-square flex-col justify-between rounded-2xl p-5 text-white shadow-lg transition transform hover:-translate-y-1 {{ $tile['bg'] }}">
-                                    <div class="flex items-start justify-between">
-                                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons[$tile['icon']] }}" />
-                                            </svg>
-                                        </span>
-                                        @if ($tile['count'])
-                                            <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
-                                                {{ $tile['count'] }}
+                                @if ($tile['name'] === 'Products')
+                                    <!-- Custom Products Tile with Pending Count Logic -->
+                                    <div x-show="!q || '{{ strtolower($tile['name'] . ' ' . $tile['sub']) }}'.includes(q.toLowerCase())"
+                                         class="group relative flex aspect-square flex-col justify-between rounded-2xl p-5 text-white shadow-lg transition transform hover:-translate-y-1 {{ $tile['bg'] }}">
+                                        
+                                        <div class="flex items-start justify-between mb-2">
+                                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons[$tile['icon']] }}" />
+                                                </svg>
                                             </span>
-                                        @endif
+                                            
+                                            @if ($pendingProducts > 0)
+                                                <span class="px-2 py-0.5 text-[10px] font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                                    {{ $pendingProducts }} pending
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-0.5 text-[10px] font-medium bg-white/20 text-white rounded-full backdrop-blur-sm">
+                                                    {{ $counts['products'] }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        
+                                        <div class="mt-auto">
+                                            <p class="text-sm font-semibold">{{ $tile['name'] }}</p>
+                                            <p class="mt-0.5 text-xs text-white/70 group-hover:text-white/90">{{ $tile['sub'] }}</p>
+                                            
+                                            <div class="flex flex-col gap-1.5 mt-3">
+                                                <a href="{{ $tile['href'] }}"
+                                                    class="inline-flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-md hover:bg-blue-700 transition">
+                                                    Manage
+                                                </a>
+                                                @if ($pendingProducts > 0)
+                                                    <a href="{{ route('admin.products.pending') }}"
+                                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-yellow-500 text-white text-xs font-semibold rounded-md hover:bg-yellow-600 transition">
+                                                        Review Queue
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="text-sm font-semibold">{{ $tile['name'] }}</p>
-                                        <p class="mt-0.5 text-xs text-white/70 group-hover:text-white/90">{{ $tile['sub'] }}</p>
-                                    </div>
-                                </a>
+                                @else
+                                    <!-- Default Tile Template -->
+                                    <a href="{{ $tile['href'] }}"
+                                       x-show="!q || '{{ strtolower($tile['name'] . ' ' . $tile['sub']) }}'.includes(q.toLowerCase())"
+                                       class="group relative flex aspect-square flex-col justify-between rounded-2xl p-5 text-white shadow-lg transition transform hover:-translate-y-1 {{ $tile['bg'] }}">
+                                        <div class="flex items-start justify-between">
+                                            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons[$tile['icon']] }}" />
+                                                </svg>
+                                            </span>
+                                            @if ($tile['count'])
+                                                <span class="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
+                                                    {{ $tile['count'] }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold">{{ $tile['name'] }}</p>
+                                            <p class="mt-0.5 text-xs text-white/70 group-hover:text-white/90">{{ $tile['sub'] }}</p>
+                                        </div>
+                                    </a>
+                                @endif
                             @endforeach
 
                             <!-- Reports Tile (Wide) -->

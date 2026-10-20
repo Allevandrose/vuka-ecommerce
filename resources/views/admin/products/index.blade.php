@@ -160,10 +160,20 @@
                                    class="w-full rounded-xl border-0 bg-black/10 py-2.5 pl-9 pr-3 text-sm text-white placeholder-white/60 focus:bg-black/20 focus:ring-2 focus:ring-[#1fd3a3]" />
                         </label>
                         
-                        <a href="{{ route('admin.products.create') }}"
-                           class="inline-flex items-center gap-2 bg-[#013F4A] text-white px-4 py-2 rounded-lg hover:bg-[#024e5c] transition text-sm font-semibold border border-white/10">
-                            <i class="fas fa-plus text-xs"></i> New Product
-                        </a>
+                        <div class="flex items-center gap-2">
+                            @php $pendingCount = \App\Models\Product::where('status', 'pending_review')->count(); @endphp
+                            @if ($pendingCount > 0)
+                                <a href="{{ route('admin.products.pending') }}"
+                                    class="inline-flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition text-sm font-semibold shadow-sm">
+                                    <i class="fas fa-clock text-xs"></i>
+                                    Review Queue ({{ $pendingCount }})
+                                </a>
+                            @endif
+                            <a href="{{ route('admin.products.create') }}"
+                               class="inline-flex items-center gap-2 bg-[#013F4A] text-white px-4 py-2 rounded-lg hover:bg-[#024e5c] transition text-sm font-semibold border border-white/10">
+                                <i class="fas fa-plus text-xs"></i> New Product
+                            </a>
+                        </div>
                     </div>
                 </div>
 
