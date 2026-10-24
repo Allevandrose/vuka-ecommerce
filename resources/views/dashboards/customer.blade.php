@@ -25,7 +25,6 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <!-- Welcome Section -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900">
                     <div class="flex items-center justify-between">
@@ -42,10 +41,8 @@
                 </div>
             </div>
 
-            <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 
-                <!-- Total Orders -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex items-center">
@@ -62,7 +59,6 @@
                     </div>
                 </div>
 
-                <!-- Wishlist -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex items-center">
@@ -79,8 +75,8 @@
                     </div>
                 </div>
 
-                <!-- Cart Items (clickable) -->
                 <a href="{{ route('cart.index') }}"
+                   data-cart-link
                    class="group block bg-white overflow-hidden shadow-sm sm:rounded-lg ring-1 transition
                           {{ $cartItemCount > 0 ? 'ring-amber-200 hover:ring-amber-400' : 'ring-transparent hover:ring-amber-200' }}">
                     <div class="p-6">
@@ -92,7 +88,7 @@
                             </div>
                             <div class="ml-4 flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-500">Cart Items</p>
-                                <p class="text-2xl font-semibold text-gray-900">{{ $cartItemCount }}</p>
+                                <p id="cart-stat-count" class="text-2xl font-semibold text-gray-900">{{ $cartItemCount }}</p>
                             </div>
                             <span class="text-xs font-semibold text-amber-600 opacity-0 group-hover:opacity-100 transition">
                                 View <i class="fas fa-arrow-right text-[10px]"></i>
@@ -102,7 +98,6 @@
                 </a>
             </div>
 
-            <!-- Cart Summary Strip -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -163,7 +158,7 @@
 
                         <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                             <span class="text-sm text-gray-500">Subtotal</span>
-                            <span class="text-base font-semibold text-gray-900">
+                            <span id="cart-strip-subtotal" class="text-base font-semibold text-gray-900">
                                 {{ $cartCurrency }} {{ number_format((float) $cartSubtotal, 2) }}
                             </span>
                         </div>
@@ -171,10 +166,8 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-                <!-- Browse Products -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h4 class="text-lg font-semibold text-gray-900 mb-2">🛒 Browse Products</h4>
@@ -186,7 +179,6 @@
                     </div>
                 </div>
 
-                <!-- My Cart -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <h4 class="text-lg font-semibold text-gray-900 mb-2">🛍️ My Cart</h4>
@@ -200,7 +192,6 @@
                     </div>
                 </div>
 
-                <!-- My Orders (coming soon) -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg opacity-80">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
@@ -217,7 +208,6 @@
                     </div>
                 </div>
 
-                <!-- Wishlist (coming soon) -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg opacity-80">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
@@ -236,4 +226,62 @@
             </div>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const countEl = document.getElementById('cart-stat-count');
+            const subtotalEl = document.getElementById('cart-strip-subtotal');
+            const linkEl = document.querySelector('[data-cart-link]');
+            if (!countEl) return;
+
+            const endpoint = @json(route('cart.count'));
+
+            function applyRing(count) {
+                if (!linkEl) return;
+                linkEl.classList.toggle('ring-amber-200', count > 0);
+                linkEl.classList.toggle('ring-transparent', count === 0);
+            }
+
+            function formatMoney(currency, amount) {
+                const n = Number(amount || 0);
+                return currency + ' ' + n.toLocaleString('en-KE', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+            }
+
+            async function refreshCartCount() {
+                try {
+                    const res = await fetch(endpoint, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (typeof data.count === 'number') {
+                        const current = Number(countEl.textContent.trim());
+                        if (current !== data.count) {
+                            countEl.textContent = data.count;
+                            applyRing(data.count);
+                        }
+                    }
+                    if (subtotalEl && data.currency) {
+                        subtotalEl.textContent = formatMoney(data.currency, data.subtotal);
+                    }
+                } catch (e) {
+                    /* silently ignore */
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', refreshCartCount);
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') refreshCartCount();
+            });
+            window.addEventListener('focus', refreshCartCount);
+        })();
+    </script>
 </x-app-layout>
