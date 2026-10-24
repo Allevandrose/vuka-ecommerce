@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\StaffManagementController;
 use App\Http\Controllers\Admin\StaffRegistrationController;
 use App\Http\Controllers\Admin\VendorManagementController;
+use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CategoryController;
 use App\Http\Controllers\Shop\HomeController;
 use App\Http\Controllers\Shop\ProductController;
@@ -21,15 +22,22 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// ============================================
-// PUBLIC ROUTES
-// ============================================
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Public catalog — category and product pages live
 Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('category.show');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
+
+// ============================================
+// SHOP — CART
+// ============================================
+Route::middleware(['auth'])->prefix('cart')->name('cart.')->group(function () {
+    Route::get('/', [CartController::class, 'index'])->name('index');
+    Route::get('/count', [CartController::class, 'count'])->name('count');
+    Route::post('/', [CartController::class, 'store'])->name('store');
+    Route::patch('/{cartItem}', [CartController::class, 'update'])->name('update');
+    Route::delete('/{cartItem}', [CartController::class, 'destroy'])->name('destroy');
+});
 
 // ============================================
 // GOOGLE AUTH ROUTES
@@ -54,7 +62,7 @@ Route::prefix('vendor')->name('vendor.')->group(function () {
 });
 
 // ============================================
-// STAFF REGISTRATION (Private URL)
+// STAFF REGISTRATION
 // ============================================
 Route::get('/staff/register', [StaffRegistrationController::class, 'showRegistrationForm'])
     ->name('staff.register.form');
@@ -93,7 +101,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin/brands')->name('admin.brands
 // ADMIN — ATTRIBUTES
 // ============================================
 Route::middleware(['auth', 'admin'])->prefix('admin/attributes')->name('admin.attributes.')->group(function () {
-    // JSON endpoint — must be declared BEFORE the {attribute} wildcard routes
     Route::get('/json', [AttributeJsonController::class, 'forCategory'])->name('json');
 
     Route::get('/', [AttributeController::class, 'index'])->name('index');
@@ -109,12 +116,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin/attributes')->name('admin.at
 // ============================================
 Route::middleware(['auth', 'admin'])->prefix('admin/products')->name('admin.products.')->group(function () {
     Route::get('/', [AdminProductController::class, 'index'])->name('index');
-    Route::get('/pending', [AdminProductController::class, 'pending'])->name('pending');                  // ← NEW
-    Route::post('/bulk-approve', [AdminProductController::class, 'bulkApprove'])->name('bulkApprove');  // ← NEW
+    Route::get('/pending', [AdminProductController::class, 'pending'])->name('pending');
+    Route::post('/bulk-approve', [AdminProductController::class, 'bulkApprove'])->name('bulkApprove');
     Route::get('/create', [AdminProductController::class, 'create'])->name('create');
     Route::post('/', [AdminProductController::class, 'store'])->name('store');
 
-    // Workflow actions — declared BEFORE {product} wildcards
     Route::post('/{product}/approve', [AdminProductController::class, 'approve'])->name('approve');
     Route::post('/{product}/reject', [AdminProductController::class, 'reject'])->name('reject');
     Route::post('/{product}/disable', [AdminProductController::class, 'disable'])->name('disable');
@@ -122,7 +128,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin/products')->name('admin.prod
     Route::post('/{product}/toggle-featured', [AdminProductController::class, 'toggleFeatured'])->name('toggleFeatured');
     Route::post('/{product}/archive', [AdminProductController::class, 'archive'])->name('archive');
 
-    // CRUD resource (show/edit/update/destroy)
     Route::get('/{product}', [AdminProductController::class, 'show'])->name('show');
     Route::get('/{product}/edit', [AdminProductController::class, 'edit'])->name('edit');
     Route::put('/{product}', [AdminProductController::class, 'update'])->name('update');
@@ -218,7 +223,4 @@ Route::middleware(['auth', 'staff.status'])->group(function () {
     Route::get('/auth/google/check', [GoogleAuthController::class, 'checkGoogleLinked'])->name('auth.google.check');
 });
 
-// ============================================
-// AUTH ROUTES (Laravel Breeze)
-// ============================================
 require __DIR__ . '/auth.php';

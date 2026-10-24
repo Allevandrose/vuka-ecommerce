@@ -1,4 +1,7 @@
-{{-- Public shop layout — reusable chrome for category, product, search pages --}}
+@php
+    $cartCount = auth()->check() ? auth()->user()->cartCount() : 0;
+@endphp
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
@@ -14,10 +17,8 @@
         <meta name="description" content="{{ $metaDescription }}">
     @endisset
 
-    {{-- Canonical --}}
     <link rel="canonical" href="{{ $canonical ?? url()->current() }}">
 
-    {{-- Open Graph --}}
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:site_name" content="{{ config('app.name', 'VukaShop') }}">
     <meta property="og:title" content="{{ $ogTitle ?? ($title ?? config('app.name', 'Vuka Shop')) }}">
@@ -28,7 +29,6 @@
         <meta property="og:image:alt" content="{{ $ogTitle ?? ($title ?? '') }}">
     @endisset
 
-    {{-- Twitter --}}
     <meta name="twitter:card" content="{{ isset($ogImage) ? 'summary_large_image' : 'summary' }}">
     <meta name="twitter:title" content="{{ $ogTitle ?? ($title ?? config('app.name', 'Vuka Shop')) }}">
     <meta name="twitter:description" content="{{ $ogDescription ?? ($metaDescription ?? '') }}">
@@ -71,9 +71,6 @@
         }
     </script>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
-
-    {{-- Page-specific SEO (JSON-LD, etc.) --}}
     @stack('seo')
 
     @stack('styles')
@@ -105,7 +102,7 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.store('cart', {
-                count: 0
+                count: {{ (int) $cartCount }}
             });
         });
     </script>
@@ -157,11 +154,12 @@
                 <div class="flex items-center gap-4 text-lg text-ink/70">
                     <button class="hover:text-gold transition-colors" aria-label="Wishlist"><i
                             class="far fa-heart"></i></button>
-                    <button class="relative hover:text-gold transition-colors" aria-label="Cart">
+                    <a href="{{ route('cart.index') }}" class="relative hover:text-gold transition-colors"
+                        aria-label="Cart">
                         <i class="fas fa-shopping-bag"></i>
                         <span x-show="$store.cart.count > 0" x-text="$store.cart.count"
                             class="absolute -top-2 -right-2 bg-gold text-ink text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span>
-                    </button>
+                    </a>
                 </div>
 
                 @auth
@@ -282,7 +280,7 @@
         <a href="#" class="flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-muted">
             <i class="fas fa-th-large text-base"></i> Categories
         </a>
-        <a href="#"
+        <a href="{{ route('cart.index') }}"
             class="relative flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-muted">
             <i class="fas fa-shopping-bag text-base"></i> Cart
             <span x-data x-show="$store.cart.count > 0" x-text="$store.cart.count"

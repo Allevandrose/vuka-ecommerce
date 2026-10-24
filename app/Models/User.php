@@ -304,4 +304,27 @@ class User extends Authenticatable
 
         return $this->productCount() < $this->productLimit();
     }
+
+    // ============================================
+    // CART
+    // ============================================
+
+    /**
+     * The user's cart rows. Per the cart design there are no orders,
+     * so a cart is simply "the set of products this user has staged".
+     * One row per (user, product); quantity is incremented on re-add.
+     */
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Total number of physical items in the cart (sum of quantities).
+     * Used by the header badge. Returns 0 for guests — they have no cart.
+     */
+    public function cartCount(): int
+    {
+        return (int) $this->cartItems()->sum('quantity');
+    }
 }

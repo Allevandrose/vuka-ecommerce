@@ -1,13 +1,4 @@
-{{-- Product Card Component
-     Usage: <x-product-card :product="$product" />
-     Optional: <x-product-card :product="$product" :show-category="false" />
-
-     Mobile-first: compact padding, smaller type, icon-only add button on phones,
-     44px-ish touch targets, hover effects only on devices that can hover.
---}}
-
 @php
-    // Optional second image, shown on hover (desktop only). Falls back gracefully if there isn't one.
     $mainUrl = $imageUrl();
     $hoverUrl = null;
     foreach (($product->images ?? []) as $img) {
@@ -21,7 +12,51 @@
 @endphp
 
 <article class="group relative flex flex-col h-full min-w-0 bg-white rounded-xl sm:rounded-2xl border border-line p-1.5 sm:p-2.5 transition duration-200 focus-within:border-moss/40 md:hover:border-moss/40 md:hover:shadow-lg md:hover:-translate-y-0.5"
-         x-data="{ fav: false, added: false }">
+         x-data="{
+             fav: false,
+             adding: false,
+             added: false,
+             async addToCart() {
+                 if (this.adding || this.added) return;
+                 this.adding = true;
+                 try {
+                     const res = await fetch('{{ route('cart.store') }}', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                             'X-Requested-With': 'XMLHttpRequest',
+                             'Accept': 'application/json',
+                         },
+                         body: JSON.stringify({ product_id: {{ $product->id }}, quantity: 1 })
+                     });
+
+                     if (res.status === 401) {
+                         window.location.href = '{{ route('login') }}';
+                         return;
+                     }
+
+                     const data = await res.json();
+
+                     if (!res.ok || !data.success) {
+                         if (window.showToast) window.showToast(data.message || 'Could not add to cart.', 'error');
+                         return;
+                     }
+
+                     if (window.Alpine && Alpine.store('cart')) {
+                         Alpine.store('cart').count = data.cart_count;
+                     }
+
+                     this.added = true;
+                     if (window.showToast) window.showToast(data.message, 'success');
+                     setTimeout(() => { this.added = false; }, 1200);
+                 } catch (e) {
+                     if (window.showToast) window.showToast('Network error. Please try again.', 'error');
+                 } finally {
+                     this.adding = false;
+                 }
+             }
+         }">
 
     {{-- IMAGE --}}
     <div class="relative rounded-lg sm:rounded-xl overflow-hidden bg-white border border-line/60 aspect-square">
@@ -30,7 +65,6 @@
            aria-label="{{ $product->name }}">
 
             @if ($mainUrl)
-                {{-- object-contain: the whole product is always visible, never cropped --}}
                 <img src="{{ $mainUrl }}"
                      alt="{{ $product->name }}"
                      loading="lazy"
@@ -140,15 +174,24 @@
             </div>
 
             @if ($product->inStock())
-                {{-- Phones: round icon button. sm and up: pill with label. --}}
-                <button type="button"
-                        @click="added = true; setTimeout(() => added = false, 1200)"
-                        :class="added ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-moss text-moss md:hover:bg-moss md:hover:text-white active:bg-moss active:text-white'"
-                        aria-label="Add {{ $product->name }} to cart"
-                        class="shrink-0 inline-flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto text-xs font-bold sm:px-3.5 sm:py-2 rounded-full border transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-1">
-                    <i class="fas text-xs sm:text-[10px]" :class="added ? 'fa-check' : 'fa-plus'"></i>
-                    <span class="hidden sm:inline" x-text="added ? 'Added' : 'Add'"></span>
-                </button>
+                @auth
+                    <button type="button"
+                            @click="addToCart()"
+                            :disabled="adding"
+                            :class="added ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-moss text-moss md:hover:bg-moss md:hover:text-white active:bg-moss active:text-white'"
+                            aria-label="Add {{ $product->name }} to cart"
+                            class="shrink-0 inline-flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto text-xs font-bold sm:px-3.5 sm:py-2 rounded-full border transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-1 disabled:opacity-70 disabled:cursor-wait">
+                        <i class="fas text-xs sm:text-[10px]" :class="added ? 'fa-check' : (adding ? 'fa-spinner fa-spin' : 'fa-plus')"></i>
+                        <span class="hidden sm:inline" x-text="added ? 'Added' : (adding ? 'Adding' : 'Add')"></span>
+                    </button>
+                @else
+                    <a href="{{ route('login') }}"
+                       aria-label="Log in to add {{ $product->name }} to cart"
+                       class="shrink-0 inline-flex items-center justify-center gap-1.5 w-10 h-10 sm:w-auto sm:h-auto text-xs font-bold sm:px-3.5 sm:py-2 rounded-full border border-line text-muted hover:border-moss hover:text-moss transition">
+                        <i class="fas fa-lock text-xs sm:text-[10px]"></i>
+                        <span class="hidden sm:inline">Log in</span>
+                    </a>
+                @endauth
             @else
                 <button type="button" disabled
                         aria-label="{{ $product->name }} is unavailable"

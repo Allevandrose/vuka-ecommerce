@@ -1,4 +1,6 @@
-{{-- resources/views/welcome.blade.php --}}
+@php
+    $cartCount = auth()->check() ? auth()->user()->cartCount() : 0;
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
@@ -43,11 +45,6 @@
         }
     </script>
 
-    {{-- Alpine plugins (focus trap + collapse) must load before Alpine core --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.14.1/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.1/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
-
     @stack('styles')
 
     <style>
@@ -73,7 +70,6 @@
             -ms-overflow-style: none;
         }
 
-        /* Visible keyboard focus across the navbar */
         header a:focus-visible,
         header button:focus-visible,
         #mobile-drawer a:focus-visible,
@@ -82,7 +78,6 @@
             outline-offset: 2px;
         }
 
-        /* Remove default search input outline & focus ring */
         input[type="text"],
         input[type="email"],
         input[type="search"] {
@@ -90,7 +85,6 @@
             box-shadow: none !important;
         }
 
-        /* Keep a subtle custom focus style for the search wrapper */
         .search-wrapper:focus-within {
             border-color: #20503C;
             box-shadow: 0 0 0 4px rgba(32, 80, 60, 0.1);
@@ -110,7 +104,7 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.store('cart', {
-                count: 0
+                count: {{ (int) $cartCount }}
             });
 
             Alpine.data('carousel', () => ({
@@ -156,7 +150,6 @@
     @resize.window="if (window.innerWidth >= 1024) { menuOpen = false; mobileSearchOpen = false }"
     @keydown.escape.window="menuOpen = false; mobileSearchOpen = false">
 
-    <!-- ANNOUNCEMENT BAR -->
     <div x-data="{ show: true }" x-show="show" x-cloak class="bg-moss text-white text-xs sm:text-[13px]">
         <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2 relative">
             <i class="fas fa-truck text-gold text-[11px]"></i>
@@ -168,24 +161,20 @@
         </div>
     </div>
 
-    <!-- HEADER -->
     <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur-md border-b border-line transition-shadow duration-200"
         :class="scrolled ? 'shadow-[0_6px_20px_-12px_rgba(20,35,28,0.35)]' : ''">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3 lg:gap-6">
 
-            {{-- Mobile / tablet: menu button --}}
             <button @click="menuOpen = true"
                 class="lg:hidden h-10 w-10 shrink-0 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-sm hover:bg-line/50 transition-colors"
                 aria-label="Open menu" :aria-expanded="menuOpen.toString()" aria-controls="mobile-drawer">
                 <i class="fas fa-bars text-sm"></i>
             </button>
 
-            {{-- Logo --}}
             <a href="{{ route('home') }}" class="shrink-0 max-lg:mx-auto lg:mx-0" aria-label="VukaShop home">
                 <img src="{{ asset('images/vukashop-logo.svg') }}" alt="VukaShop" class="h-9 sm:h-10 w-auto">
             </a>
 
-            {{-- Desktop search: borderless filled pill, lifts and turns white on focus --}}
             <form action="{{ route('search') }}" method="GET" role="search" x-data="{ q: '', focused: false }"
                 @keydown.slash.window="if (!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && window.innerWidth >= 1024) { $event.preventDefault(); $refs.q.focus(); }"
                 class="hidden lg:flex flex-1 max-w-xl items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
@@ -214,7 +203,6 @@
                 </button>
             </form>
 
-            {{-- Desktop nav links --}}
             <nav class="hidden lg:flex items-center gap-5 text-[14px] font-medium text-ink/85 ml-auto"
                 aria-label="Primary">
                 <a href="#"
@@ -225,19 +213,18 @@
                 <a href="#" class="hover:text-moss transition-colors">Support</a>
             </nav>
 
-            {{-- Desktop actions --}}
             <div class="hidden lg:flex items-center gap-3">
                 <div class="flex items-center gap-1 text-lg text-ink/70">
                     <button
                         class="h-10 w-10 rounded-full flex items-center justify-center hover:text-gold hover:bg-white transition-colors"
                         aria-label="Wishlist"><i class="far fa-heart"></i></button>
-                    <button
+                    <a href="{{ route('cart.index') }}"
                         class="relative h-10 w-10 rounded-full flex items-center justify-center hover:text-gold hover:bg-white transition-colors"
                         aria-label="Cart">
                         <i class="fas fa-shopping-bag"></i>
                         <span x-show="$store.cart.count > 0" x-text="$store.cart.count"
                             class="absolute top-0.5 right-0.5 bg-gold text-ink text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span>
-                    </button>
+                    </a>
                 </div>
 
                 <span class="h-6 w-px bg-line" aria-hidden="true"></span>
@@ -264,6 +251,10 @@
                                 class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-paper transition-colors">
                                 <i class="fas fa-gauge text-moss w-4 text-center"></i> Dashboard
                             </a>
+                            <a href="{{ route('cart.index') }}"
+                                class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-paper transition-colors">
+                                <i class="fas fa-shopping-bag text-moss w-4 text-center"></i> My Cart
+                            </a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit"
@@ -282,33 +273,30 @@
                 @endauth
             </div>
 
-            {{-- Mobile / tablet: right actions --}}
             <div class="lg:hidden flex items-center gap-2 shrink-0">
                 <button @click="mobileSearchOpen = true"
                     class="h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-sm hover:bg-line/50 transition-colors"
                     aria-label="Search">
                     <i class="fas fa-search text-sm"></i>
                 </button>
-                <button
+                <a href="{{ route('cart.index') }}"
                     class="relative h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-sm hover:bg-line/50 transition-colors"
-                    aria-label="Notifications">
-                    <i class="fas fa-bell text-sm"></i>
-                    <span class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-gold ring-2 ring-white"></span>
-                </button>
+                    aria-label="Cart">
+                    <i class="fas fa-shopping-bag text-sm"></i>
+                    <span x-show="$store.cart.count > 0" x-text="$store.cart.count"
+                        class="absolute -top-1 -right-1 bg-gold text-ink text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span>
+                </a>
             </div>
         </div>
     </header>
 
-    <!-- MOBILE DRAWER -->
     <div class="lg:hidden" x-show="menuOpen" x-cloak>
-        {{-- Backdrop --}}
         <div x-show="menuOpen" x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0" @click="menuOpen = false"
             class="fixed inset-0 z-50 bg-ink/50 backdrop-blur-sm" aria-hidden="true"></div>
 
-        {{-- Panel --}}
         <aside id="mobile-drawer" x-show="menuOpen" x-trap.noscroll="menuOpen"
             x-transition:enter="transition ease-out duration-250 transform"
             x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
@@ -330,7 +318,6 @@
 
             <div class="flex-1 overflow-y-auto no-scrollbar px-5 py-5 space-y-6">
 
-                {{-- Drawer search: matches header style (borderless filled pill, lifts and turns white on focus) --}}
                 <form action="{{ route('search') }}" method="GET" role="search" x-data="{ q: '', focused: false }"
                     class="flex items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
                     :class="focused
@@ -355,11 +342,17 @@
                     </button>
                 </form>
 
-                {{-- Quick links --}}
                 <nav class="space-y-1" aria-label="Quick links">
                     <a href="#" @click="menuOpen = false"
                         class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-semibold text-gold hover:bg-white transition-colors">
                         <i class="fas fa-bolt w-5 text-center"></i> Deals
+                    </a>
+                    <a href="{{ route('cart.index') }}" @click="menuOpen = false"
+                        class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium hover:bg-white transition-colors">
+                        <i class="fas fa-shopping-bag w-5 text-center text-moss"></i>
+                        My Cart
+                        <span x-show="$store.cart.count > 0" x-text="$store.cart.count"
+                            class="ml-auto bg-gold text-ink text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
                     </a>
                     <a href="#" @click="menuOpen = false"
                         class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium hover:bg-white transition-colors">
@@ -375,7 +368,6 @@
                     </a>
                 </nav>
 
-                {{-- Categories --}}
                 @if ($categories->isNotEmpty())
                     <div x-data="{ open: true }">
                         <button @click="open = !open"
@@ -405,7 +397,6 @@
                 @endif
             </div>
 
-            {{-- Drawer footer: auth --}}
             <div class="shrink-0 border-t border-line bg-white px-5 py-4">
                 @auth
                     <div class="grid grid-cols-2 gap-2.5">
@@ -437,7 +428,6 @@
         </aside>
     </div>
 
-    <!-- MOBILE SEARCH OVERLAY -->
     <div x-show="mobileSearchOpen" x-cloak x-transition:enter="transition ease-out duration-200"
         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
@@ -448,7 +438,6 @@
             x-transition:enter-start="opacity-0 -translate-y-3" x-transition:enter-end="opacity-100 translate-y-0"
             class="bg-white rounded-2xl p-4 w-full max-w-md shadow-2xl" x-data="{ q: '', focused: false }">
 
-            {{-- Mobile search: matches header style --}}
             <form action="{{ route('search') }}" method="GET" role="search" @submit="mobileSearchOpen = false">
                 <div class="flex items-center gap-2 rounded-full pl-5 pr-1.5 h-11 transition-all duration-200"
                     :class="focused
@@ -478,10 +467,9 @@
             </button>
         </div>
     </div>
-    <!-- MAIN -->
+
     <main class="max-w-7xl mx-auto px-4">
 
-        <!-- HERO CAROUSEL -->
         <div class="relative rounded-xl2 overflow-hidden shadow-lg my-4" x-data="carousel"
             x-init="start()" @mouseenter="stop()" @mouseleave="start()">
             <div class="flex transition-transform duration-500 ease-out"
@@ -544,7 +532,6 @@
             </div>
         </div>
 
-        <!-- CATEGORY CHIPS -->
         <div class="flex gap-2.5 overflow-x-auto no-scrollbar py-1 pb-5" x-data="{ active: 'All' }">
             <a href="#"
                 class="flex items-center gap-2 whitespace-nowrap border border-ink bg-ink text-white rounded-full px-4 py-2 text-sm font-medium shadow-sm transition-colors">
@@ -562,7 +549,6 @@
             @endforeach
         </div>
 
-        {{-- FEATURED SECTION --}}
         @if ($featured->isNotEmpty())
             <div class="flex items-baseline justify-between mt-2 mb-3">
                 <h3 class="font-serif text-xl font-semibold flex items-center gap-2">
@@ -581,7 +567,6 @@
             </div>
         @endif
 
-        <!-- POPULAR PRODUCTS -->
         <div class="flex items-baseline justify-between mt-2 mb-3">
             <h3 class="font-serif text-xl font-semibold flex items-center gap-2">
                 <i class="fas fa-fire text-gold text-base"></i> Popular right now
@@ -605,7 +590,6 @@
             </div>
         @endif
 
-        <!-- PROMO BANNER -->
         <div
             class="relative overflow-hidden rounded-xl2 bg-ink text-white px-6 py-8 sm:px-10 sm:py-10 mt-8 flex flex-col gap-2">
             <i class="fas fa-mobile-alt absolute -right-2 bottom-0 text-[7rem] text-white/[0.06] rotate-[-8deg]"></i>
@@ -620,7 +604,6 @@
             </button>
         </div>
 
-        <!-- BEST SELLERS -->
         <div class="flex items-baseline justify-between mt-9 mb-4">
             <h3 class="font-serif text-xl font-semibold flex items-center gap-2">
                 <i class="fas fa-star text-gold text-base"></i> Best sellers
@@ -644,7 +627,6 @@
             </div>
         @endif
 
-        <!-- VENDOR CTA -->
         <div class="relative overflow-hidden rounded-xl2 mt-9 text-white"
             style="background-image: linear-gradient(135deg, #14231C 0%, #20503C 100%);">
             <i
@@ -679,7 +661,6 @@
             </div>
         </div>
 
-        <!-- NEWSLETTER -->
         <div class="bg-white border border-line rounded-xl2 px-5 py-8 sm:py-10 mt-9" x-data="{ email: '', sent: false }">
             <div class="text-center max-w-md mx-auto">
                 <div class="w-11 h-11 rounded-full bg-paper flex items-center justify-center mx-auto mb-3 text-moss">
@@ -701,7 +682,6 @@
         </div>
     </main>
 
-    <!-- FOOTER -->
     <footer class="mt-10 bg-white border-t border-line pt-8 pb-6">
         <div class="max-w-7xl mx-auto px-4">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -763,7 +743,6 @@
         </div>
     </footer>
 
-    <!-- BOTTOM APP NAV (mobile / tablet) -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-line flex justify-around px-1"
         style="padding-bottom: calc(6px + env(safe-area-inset-bottom));" aria-label="App navigation">
         <a href="{{ route('home') }}"
@@ -774,7 +753,7 @@
             class="flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-muted">
             <i class="fas fa-th-large text-base"></i> Categories
         </button>
-        <a href="#"
+        <a href="{{ route('cart.index') }}"
             class="relative flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-muted">
             <i class="fas fa-shopping-bag text-base"></i> Cart
             <span x-data x-show="$store.cart.count > 0" x-text="$store.cart.count"

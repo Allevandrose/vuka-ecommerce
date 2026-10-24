@@ -1,5 +1,4 @@
 @php
-    // Build ONE clean list of gallery images (primary image first, no duplicates, no nulls)
     $galleryImages = collect($product->images ?? [])
         ->map(fn ($img) => is_array($img) ? ($img['path'] ?? null) : $img)
         ->filter()
@@ -52,7 +51,6 @@
     og-type="product"
     :canonical="route('product.show', $product->slug)">
 
-    {{-- STRUCTURED DATA --}}
     @push('seo')
         <script type="application/ld+json">
         {!! json_encode($productSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
@@ -78,7 +76,6 @@
         </script>
     @endpush
 
-    {{-- Gallery component (defined before use so Alpine always finds it) --}}
     <script>
         function productGallery(imagesArray, maxQty) {
             return {
@@ -86,14 +83,13 @@
                 index: 0,
                 maxQty: maxQty || 999,
                 qty: 1,
+                adding: false,
                 added: false,
 
-                // hover zoom
                 lens: false,
                 lensX: 50,
                 lensY: 50,
 
-                // lightbox
                 lightbox: false,
                 scale: 1,
                 panX: 0,
@@ -106,7 +102,6 @@
                 get active() { return this.images[this.index] || ''; },
                 get multiple() { return this.images.length > 1; },
 
-                // ---- navigation
                 go(i) {
                     if (!this.images.length) return;
                     this.index = (i + this.images.length) % this.images.length;
@@ -115,7 +110,6 @@
                 next() { this.go(this.index + 1); },
                 prev() { this.go(this.index - 1); },
 
-                // ---- hover zoom (desktop only)
                 canHover() { return window.matchMedia('(hover: hover) and (pointer: fine)').matches; },
                 enterLens() { if (this.canHover()) this.lens = true; },
                 moveLens(e) {
@@ -124,14 +118,12 @@
                     this.lensY = Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100));
                 },
 
-                // ---- swipe on mobile
                 swipeStart(e) { this.touchStartX = e.changedTouches[0].clientX; },
                 swipeEnd(e) {
                     const dx = e.changedTouches[0].clientX - this.touchStartX;
                     if (Math.abs(dx) > 45 && this.multiple) { dx < 0 ? this.next() : this.prev(); }
                 },
 
-                // ---- lightbox
                 open() {
                     if (!this.images.length) return;
                     this.lens = false;
@@ -171,17 +163,52 @@
                     if (e.key === '-') this.zoomBy(-0.5);
                 },
 
-                // ---- purchase
                 inc() { this.qty = Math.min(this.maxQty, (parseInt(this.qty) || 1) + 1); },
                 dec() { this.qty = Math.max(1, (parseInt(this.qty) || 1) - 1); },
                 clampQty() { this.qty = Math.min(this.maxQty, Math.max(1, parseInt(this.qty) || 1)); },
-                addToCart() {
+
+                async addToCart() {
+                    if (this.adding || this.added) return;
                     this.clampQty();
-                    this.added = true;
-                    setTimeout(() => this.added = false, 1500);
+                    this.adding = true;
+                    try {
+                        const res = await fetch('{{ route('cart.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ product_id: {{ $product->id }}, quantity: this.qty })
+                        });
+
+                        if (res.status === 401) {
+                            window.location.href = '{{ route('login') }}';
+                            return;
+                        }
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                            if (window.showToast) window.showToast(data.message || 'Could not add to cart.', 'error');
+                            return;
+                        }
+
+                        if (window.Alpine && Alpine.store('cart')) {
+                            Alpine.store('cart').count = data.cart_count;
+                        }
+
+                        this.added = true;
+                        if (window.showToast) window.showToast(data.message, 'success');
+                        setTimeout(() => { this.added = false; }, 1500);
+                    } catch (e) {
+                        if (window.showToast) window.showToast('Network error. Please try again.', 'error');
+                    } finally {
+                        this.adding = false;
+                    }
                 },
 
-                // ---- share
                 async share() {
                     const data = { title: @js($product->name), url: window.location.href };
                     if (navigator.share) { try { await navigator.share(data); } catch (e) {} }
@@ -191,7 +218,6 @@
         }
     </script>
 
-    {{-- BREADCRUMB --}}
     <nav class="flex items-center gap-2 text-xs text-muted py-4 overflow-x-auto no-scrollbar" aria-label="Breadcrumb">
         <a href="{{ route('home') }}" class="hover:text-moss transition-colors shrink-0">
             <i class="fas fa-home"></i> Home
@@ -208,18 +234,13 @@
         @endforeach
     </nav>
 
-    {{-- MAIN PRODUCT SECTION --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 mb-12"
          x-data="productGallery({{ Js::from($galleryImages) }}, {{ $maxQty }})"
          @keydown.window="onKey($event)">
 
-        {{-- ============================================ --}}
-        {{-- LEFT: IMAGE GALLERY --}}
-        {{-- ============================================ --}}
         <div class="lg:sticky lg:top-24 lg:self-start">
             <div class="flex gap-3 lg:flex-row flex-col">
 
-                {{-- Vertical thumbnails (desktop) --}}
                 @if (count($galleryImages) > 1)
                     <div class="hidden lg:flex flex-col gap-2.5 max-h-[560px] overflow-y-auto no-scrollbar shrink-0 py-0.5">
                         <template x-for="(img, i) in images" :key="'d' + i">
@@ -235,7 +256,6 @@
                     </div>
                 @endif
 
-                {{-- Main image --}}
                 <div class="relative flex-1 min-w-0">
                     <div class="relative rounded-2xl overflow-hidden bg-white border border-line aspect-square select-none group">
                         @if (count($galleryImages))
@@ -261,7 +281,6 @@
                                      :style="`background-image:url('${active}');background-size:220%;background-position:${lensX}% ${lensY}%`"></div>
                             </div>
 
-                            {{-- Badges --}}
                             <div class="absolute top-3 left-3 flex flex-col gap-2 items-start pointer-events-none">
                                 @if ($product->is_featured)
                                     <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gold text-ink shadow-sm">
@@ -275,7 +294,6 @@
                                 @endif
                             </div>
 
-                            {{-- Action buttons --}}
                             <div class="absolute top-3 right-3 flex flex-col gap-2">
                                 <button type="button" @click.stop="open()" aria-label="Zoom image"
                                         class="w-10 h-10 rounded-full bg-white/90 backdrop-blur border border-line text-ink flex items-center justify-center shadow-sm hover:bg-white hover:text-moss transition">
@@ -287,7 +305,6 @@
                                 </button>
                             </div>
 
-                            {{-- Prev / next arrows --}}
                             @if (count($galleryImages) > 1)
                                 <button type="button" @click.stop="prev()" aria-label="Previous image"
                                         class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 border border-line text-ink flex items-center justify-center shadow-sm hover:bg-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition">
@@ -323,7 +340,6 @@
                         @endif
                     </div>
 
-                    {{-- Horizontal thumbnails (mobile / tablet) --}}
                     @if (count($galleryImages) > 1)
                         <div class="flex lg:hidden gap-2 mt-3 overflow-x-auto no-scrollbar">
                             <template x-for="(img, i) in images" :key="'m' + i">
@@ -340,12 +356,8 @@
             </div>
         </div>
 
-        {{-- ============================================ --}}
-        {{-- RIGHT: INFO PANEL --}}
-        {{-- ============================================ --}}
         <div class="space-y-5">
 
-            {{-- Brand + title --}}
             <div>
                 @if ($product->brand)
                     <a href="#" class="inline-flex items-center gap-1.5 text-sm font-semibold text-moss hover:text-moss/70 transition">
@@ -372,14 +384,12 @@
                 </div>
             </div>
 
-            {{-- Short description --}}
             @if ($product->short_description)
                 <p class="text-sm sm:text-base text-ink/80 leading-relaxed">
                     {{ $product->short_description }}
                 </p>
             @endif
 
-            {{-- Price block --}}
             <div class="bg-paper rounded-2xl p-4 sm:p-5">
                 <div class="flex items-baseline gap-3 flex-wrap">
                     <span class="font-serif text-3xl sm:text-4xl font-bold text-ink">
@@ -396,7 +406,6 @@
                     @endif
                 </div>
 
-                {{-- Stock status --}}
                 <div class="mt-3 flex items-center gap-2 text-sm">
                     @if (!$product->track_inventory)
                         <span class="inline-flex items-center gap-1.5 text-moss font-medium">
@@ -420,7 +429,6 @@
                 </div>
             </div>
 
-            {{-- Trust badges --}}
             <div class="flex flex-wrap gap-2">
                 @if ($product->is_verified)
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
@@ -442,37 +450,44 @@
                 </span>
             </div>
 
-            {{-- Add to cart --}}
             <div class="space-y-3 pt-2">
                 @if ($product->inStock())
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center border border-line rounded-full overflow-hidden bg-white">
-                            <button type="button" @click="dec()" aria-label="Decrease quantity"
-                                    class="w-11 h-11 flex items-center justify-center text-ink hover:bg-paper transition">
-                                <i class="fas fa-minus text-xs"></i>
-                            </button>
-                            <input type="number" x-model.number="qty" @change="clampQty()" min="1" max="{{ $maxQty }}"
-                                   aria-label="Quantity"
-                                   class="w-12 text-center border-0 focus:ring-0 text-sm font-semibold bg-white p-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-                            <button type="button" @click="inc()" aria-label="Increase quantity"
-                                    class="w-11 h-11 flex items-center justify-center text-ink hover:bg-paper transition">
-                                <i class="fas fa-plus text-xs"></i>
+                    @auth
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center border border-line rounded-full overflow-hidden bg-white">
+                                <button type="button" @click="dec()" aria-label="Decrease quantity"
+                                        class="w-11 h-11 flex items-center justify-center text-ink hover:bg-paper transition">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <input type="number" x-model.number="qty" @change="clampQty()" min="1" max="{{ $maxQty }}"
+                                       aria-label="Quantity"
+                                       class="w-12 text-center border-0 focus:ring-0 text-sm font-semibold bg-white p-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+                                <button type="button" @click="inc()" aria-label="Increase quantity"
+                                        class="w-11 h-11 flex items-center justify-center text-ink hover:bg-paper transition">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+
+                            <button type="button"
+                                    @click="addToCart()"
+                                    :disabled="adding"
+                                    :class="added ? 'bg-emerald-600' : 'bg-moss hover:bg-moss/90'"
+                                    class="flex-1 text-white font-semibold py-3 px-6 rounded-full transition flex items-center justify-center gap-2 shadow-[0_10px_24px_-8px_rgba(32,80,60,0.55)] disabled:opacity-80 disabled:cursor-wait">
+                                <i class="fas" :class="added ? 'fa-check' : (adding ? 'fa-spinner fa-spin' : 'fa-shopping-cart')"></i>
+                                <span x-text="added ? 'Added to cart' : (adding ? 'Adding…' : 'Add to cart')"></span>
                             </button>
                         </div>
 
                         <button type="button"
-                                @click="addToCart()"
-                                :class="added ? 'bg-emerald-600' : 'bg-moss hover:bg-moss/90'"
-                                class="flex-1 text-white font-semibold py-3 px-6 rounded-full transition flex items-center justify-center gap-2 shadow-[0_10px_24px_-8px_rgba(32,80,60,0.55)]">
-                            <i class="fas" :class="added ? 'fa-check' : 'fa-shopping-cart'"></i>
-                            <span x-text="added ? 'Added to cart' : 'Add to cart'"></span>
+                                class="w-full border-2 border-ink text-ink font-semibold py-3 rounded-full hover:bg-ink hover:text-white transition">
+                            <i class="fas fa-bolt text-xs"></i> Buy now
                         </button>
-                    </div>
-
-                    <button type="button"
-                            class="w-full border-2 border-ink text-ink font-semibold py-3 rounded-full hover:bg-ink hover:text-white transition">
-                        <i class="fas fa-bolt text-xs"></i> Buy now
-                    </button>
+                    @else
+                        <a href="{{ route('login') }}"
+                           class="w-full bg-moss text-white font-semibold py-3 px-6 rounded-full transition flex items-center justify-center gap-2 shadow-[0_10px_24px_-8px_rgba(32,80,60,0.55)] hover:bg-moss/90">
+                            <i class="fas fa-lock text-xs"></i> Log in to add to cart
+                        </a>
+                    @endauth
                 @else
                     <button type="button" disabled
                             class="w-full bg-gray-200 text-gray-500 font-semibold py-3 rounded-full cursor-not-allowed">
@@ -484,7 +499,6 @@
                 @endif
             </div>
 
-            {{-- Delivery info --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-line">
                 <div class="flex items-start gap-2.5">
                     <div class="w-9 h-9 rounded-full bg-paper flex items-center justify-center text-moss shrink-0">
@@ -507,7 +521,6 @@
                 </div>
             </div>
 
-            {{-- Vendor card --}}
             @if ($product->isVendorProduct() && $product->source)
                 <div class="bg-white border border-line rounded-2xl p-4 flex items-center gap-3">
                     <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
@@ -532,9 +545,6 @@
             @endif
         </div>
 
-        {{-- ============================================ --}}
-        {{-- FULLSCREEN LIGHTBOX WITH ZOOM --}}
-        {{-- ============================================ --}}
         <template x-teleport="body">
             <div x-show="lightbox" x-cloak
                  x-transition.opacity.duration.150ms
@@ -613,9 +623,6 @@
         </template>
     </div>
 
-    {{-- ============================================ --}}
-    {{-- DESCRIPTION + SPECS (tabbed) --}}
-    {{-- ============================================ --}}
     <div class="bg-white border border-line rounded-2xl overflow-hidden mb-8"
          x-data="{ tab: 'description' }">
 
@@ -640,7 +647,6 @@
             </button>
         </div>
 
-        {{-- DESCRIPTION TAB — now renders sanitized HTML --}}
         <div x-show="tab === 'description'" class="p-5 sm:p-6">
             @if ($product->description)
                 <div class="prose prose-sm max-w-3xl text-ink/80 leading-relaxed
@@ -658,7 +664,6 @@
             @endif
         </div>
 
-        {{-- SPECS TAB --}}
         <div x-show="tab === 'specs'" x-cloak class="p-5 sm:p-6">
             @php
                 $productAttrs = $product->attributes ?? [];
@@ -694,12 +699,10 @@
         </div>
     </div>
 
-    {{-- REVIEWS --}}
     <div id="reviews" class="scroll-mt-24">
         @include('shop.partials.product-reviews', ['product' => $product])
     </div>
 
-    {{-- RELATED --}}
     @if ($related->isNotEmpty())
         <section class="mb-12 mt-10">
             <div class="flex items-baseline justify-between mb-4">

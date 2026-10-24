@@ -5,9 +5,6 @@ import Swal from "sweetalert2";
 // Make Alpine available globally
 window.Alpine = Alpine;
 
-// Start Alpine
-Alpine.start();
-
 // Toast notification helper
 window.showToast = function (message, type = "success") {
     const Toast = Swal.mixin({
@@ -30,20 +27,19 @@ window.showToast = function (message, type = "success") {
 
 // Handle flash messages
 document.addEventListener("DOMContentLoaded", function () {
-    // Check for success messages
     const successMessage = document.querySelector('[data-swal="success"]');
     if (successMessage) {
         showToast(successMessage.dataset.message, "success");
     }
 
-    // Check for error messages
     const errorMessage = document.querySelector('[data-swal="error"]');
     if (errorMessage) {
         showToast(errorMessage.dataset.message, "error");
     }
 });
 
-// Handle Alpine dropdown toggle for mobile
+// Register all Alpine stores/data BEFORE Alpine.start() fires `alpine:init`.
+// Anything registered after Alpine.start() will never fire for the first boot.
 document.addEventListener("alpine:init", () => {
     Alpine.store("navigation", {
         open: false,
@@ -55,3 +51,6 @@ document.addEventListener("alpine:init", () => {
         },
     });
 });
+
+// Start Alpine LAST, after every init listener is registered
+Alpine.start();
