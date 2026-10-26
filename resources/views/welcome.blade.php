@@ -1,5 +1,9 @@
 @php
     $cartCount = auth()->check() ? auth()->user()->cartCount() : 0;
+    // Optional flash data from a normal (non-AJAX) add-to-cart redirect:
+    // return back()->with('cart_added', ['name' => $p->name, 'image' => $p->image_url, 'price' => $p->price, 'quantity' => 1]);
+    $flashCart = session('cart_added');
+    $flashSuccess = session('success');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -44,6 +48,9 @@
             },
         }
     </script>
+
+    {{-- SweetAlert2 (if resources/js/app.js already imports it, remove this line) --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
 
     @stack('styles')
 
@@ -99,6 +106,359 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
+        /* ==========================================================
+           VukaShop · SweetAlert2 "added to cart" popup
+           ========================================================== */
+        .swal2-container.vk-container {
+            padding: 1rem;
+            background: rgba(20, 35, 28, 0.5) !important;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .swal2-popup.vk-popup {
+            width: 100%;
+            max-width: 380px;
+            padding: 0;
+            overflow: hidden;
+            border-radius: 24px;
+            background: #F7F5EF;
+            color: #14231C;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 0 0 1px #E4E0D5, 0 34px 70px -24px rgba(20, 35, 28, 0.65);
+        }
+
+        .swal2-popup.vk-popup .swal2-html-container {
+            margin: 0;
+            padding: 0;
+            overflow: visible;
+            text-align: left;
+            color: inherit;
+        }
+
+        /* Header: same moss gradient family as the hero slides */
+        .vk-head {
+            position: relative;
+            overflow: hidden;
+            padding: 30px 24px 26px;
+            text-align: center;
+            color: #fff;
+            background-image: linear-gradient(135deg, #14231C 0%, #20503C 100%);
+        }
+
+        .vk-head-bag {
+            position: absolute;
+            right: -10px;
+            bottom: -18px;
+            font-size: 7.5rem;
+            color: rgba(255, 255, 255, 0.06);
+            transform: rotate(-8deg);
+            pointer-events: none;
+        }
+
+        .vk-badge {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 68px;
+            height: 68px;
+            margin: 0 auto 14px;
+            border-radius: 9999px;
+            background: #F7F5EF;
+            box-shadow: 0 0 0 6px rgba(231, 169, 59, 0.28), 0 14px 28px -10px rgba(0, 0, 0, 0.5);
+            animation: vk-badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+        }
+
+        .vk-badge::after {
+            content: "";
+            position: absolute;
+            inset: -6px;
+            border-radius: 9999px;
+            border: 2px solid #E7A93B;
+            opacity: 0;
+            animation: vk-ring 0.9s ease-out 0.35s 1;
+        }
+
+        .vk-check {
+            width: 34px;
+            height: 34px;
+        }
+
+        .vk-check path {
+            fill: none;
+            stroke: #20503C;
+            stroke-width: 4.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 44;
+            stroke-dashoffset: 44;
+            animation: vk-draw 0.45s ease-out 0.3s forwards;
+        }
+
+        .vk-title {
+            position: relative;
+            z-index: 1;
+            margin: 0;
+            font-family: 'Fraunces', ui-serif, Georgia, serif;
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.1;
+        }
+
+        .vk-sub {
+            position: relative;
+            z-index: 1;
+            margin: 6px 0 0;
+            font-size: 13.5px;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        /* Body */
+        .vk-body {
+            padding: 18px 20px 6px;
+        }
+
+        .vk-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #E4E0D5;
+        }
+
+        .vk-thumb {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #F7F5EF;
+            border: 1px solid #E4E0D5;
+            color: #20503C;
+        }
+
+        .vk-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .vk-item-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .vk-item-name {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .vk-item-meta {
+            margin: 3px 0 0;
+            font-size: 12.5px;
+            color: #6C7268;
+        }
+
+        .vk-item-meta strong {
+            color: #20503C;
+            font-weight: 700;
+        }
+
+        .vk-count {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 14px 0 0;
+            font-size: 12.5px;
+            color: #6C7268;
+        }
+
+        .vk-count i {
+            color: #E7A93B;
+        }
+
+        .vk-msg {
+            margin: 0;
+            padding: 6px 4px 2px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.5;
+            color: rgba(20, 35, 28, 0.75);
+        }
+
+        /* Buttons */
+        .swal2-popup.vk-popup .swal2-actions.vk-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin: 0;
+            padding: 16px 20px 20px;
+        }
+
+        .swal2-popup.vk-popup .swal2-actions.vk-actions.vk-single {
+            grid-template-columns: 1fr;
+        }
+
+        .swal2-popup.vk-popup .vk-btn {
+            margin: 0;
+            padding: 12px 14px;
+            border-radius: 9999px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s, transform 0.1s, box-shadow 0.15s;
+        }
+
+        .swal2-popup.vk-popup .vk-btn:active {
+            transform: scale(0.97);
+        }
+
+        .swal2-popup.vk-popup .vk-btn:focus-visible {
+            outline: 2px solid #20503C;
+            outline-offset: 2px;
+            box-shadow: none;
+        }
+
+        .swal2-popup.vk-popup .vk-confirm {
+            order: 2;
+            border: 0;
+            background: #E7A93B;
+            color: #14231C;
+            box-shadow: 0 10px 24px -8px rgba(231, 169, 59, 0.65);
+        }
+
+        .swal2-popup.vk-popup .vk-confirm:hover {
+            background: rgba(231, 169, 59, 0.9);
+        }
+
+        .swal2-popup.vk-popup .vk-cancel {
+            order: 1;
+            background: #fff;
+            color: #14231C;
+            border: 1px solid #E4E0D5;
+        }
+
+        .swal2-popup.vk-popup .vk-cancel:hover {
+            background: #F7F5EF;
+        }
+
+        /* Auto-close timer bar */
+        .swal2-popup.vk-popup .swal2-timer-progress-bar-container {
+            top: auto;
+            bottom: 0;
+            height: 4px;
+            background: transparent;
+            border-radius: 0;
+        }
+
+        .swal2-popup.vk-popup .swal2-timer-progress-bar {
+            background: #E7A93B;
+        }
+
+        /* Enter / exit */
+        .swal2-popup.vk-popup.vk-in {
+            animation: vk-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .swal2-popup.vk-popup.vk-out {
+            animation: vk-out 0.2s ease-in forwards;
+        }
+
+        @keyframes vk-in {
+            from {
+                opacity: 0;
+                transform: translateY(18px) scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes vk-out {
+            to {
+                opacity: 0;
+                transform: translateY(10px) scale(0.97);
+            }
+        }
+
+        @keyframes vk-badge-pop {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes vk-ring {
+            0% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.55);
+            }
+        }
+
+        @keyframes vk-draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .swal2-popup.vk-popup.vk-in,
+            .swal2-popup.vk-popup.vk-out,
+            .vk-badge,
+            .vk-badge::after {
+                animation: none;
+            }
+
+            .vk-check path {
+                animation: none;
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .swal2-popup.vk-popup .swal2-actions.vk-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .swal2-popup.vk-popup .vk-confirm {
+                order: 1;
+            }
+
+            .swal2-popup.vk-popup .vk-cancel {
+                order: 2;
+            }
+        }
     </style>
 
     <script>
@@ -141,6 +501,169 @@
                 },
             }));
         });
+
+        /* ==========================================================
+           Add-to-cart success popup
+           ----------------------------------------------------------
+           Call it directly:
+             vukaCartAdded({ name, image, price, quantity, count })
+
+           or dispatch an event from anywhere (Alpine, fetch, etc.):
+             window.dispatchEvent(new CustomEvent('cart:added', {
+                 detail: { name, image, price, quantity, count }
+             }));
+             // Alpine: $dispatch('cart:added', { name: '...', count: 3 })
+
+           `count` (the new cart total) also updates the header badges.
+           ========================================================== */
+        (function () {
+            const CART_URL = @json(route('cart.index'));
+
+            const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            } [c]));
+
+            const money = (p) => {
+                if (p === null || p === undefined || p === '') return '';
+                const n = Number(String(p).replace(/[^0-9.]/g, ''));
+                return isNaN(n) || String(p).match(/[a-z]/i) ? esc(p) : 'KSh ' + n.toLocaleString('en-KE');
+            };
+
+            window.vukaCartAdded = function (opts = {}) {
+                if (typeof Swal === 'undefined') return;
+
+                const {
+                    title = 'Added to cart',
+                    name = '',
+                    image = '',
+                    price = null,
+                    quantity = 1,
+                    count = null,
+                    message = '',
+                    showCartButton = true,
+                } = opts;
+
+                const total = count !== null && count !== '' ? Number(count) : null;
+                if (total !== null && !isNaN(total) && window.Alpine && Alpine.store('cart')) {
+                    Alpine.store('cart').count = total;
+                }
+
+                const thumb = image ?
+                    `<img src="${esc(image)}" alt="" loading="lazy">` :
+                    `<i class="fas fa-shopping-bag"></i>`;
+
+                const priceText = money(price);
+                const meta = [
+                    quantity ? `Qty <strong>${esc(quantity)}</strong>` : '',
+                    priceText ? `<strong>${priceText}</strong>` : ''
+                ].filter(Boolean).join(' &nbsp;·&nbsp; ');
+
+                const itemBlock = name ? `
+                    <div class="vk-item">
+                        <div class="vk-thumb">${thumb}</div>
+                        <div class="vk-item-info">
+                            <p class="vk-item-name">${esc(name)}</p>
+                            ${meta ? `<p class="vk-item-meta">${meta}</p>` : ''}
+                        </div>
+                    </div>` : '';
+
+                const countBlock = total !== null && !isNaN(total) && total > 0 ? `
+                    <p class="vk-count"><i class="fas fa-shopping-bag"></i>
+                        Your cart has ${total} ${total === 1 ? 'item' : 'items'}</p>` : '';
+
+                const sub = name ? 'It’s waiting in your cart.' : esc(message);
+
+                return Swal.fire({
+                    html: `
+                        <div class="vk-head">
+                            <i class="fas fa-store vk-head-bag" aria-hidden="true"></i>
+                            <div class="vk-badge">
+                                <svg class="vk-check" viewBox="0 0 52 52" aria-hidden="true">
+                                    <path d="M14 27l8.5 8.5L38 18"/>
+                                </svg>
+                            </div>
+                            <h2 class="vk-title">${esc(title)}</h2>
+                            ${sub ? `<p class="vk-sub">${sub}</p>` : ''}
+                        </div>
+                        ${(itemBlock || countBlock) ? `<div class="vk-body">${itemBlock}${countBlock}</div>` : ''}
+                    `,
+                    showConfirmButton: true,
+                    showCancelButton: showCartButton,
+                    confirmButtonText: showCartButton ? 'View cart' : 'Got it',
+                    cancelButtonText: 'Keep shopping',
+                    buttonsStyling: false,
+                    reverseButtons: false,
+                    focusConfirm: false,
+                    returnFocus: false,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    width: 380,
+                    padding: 0,
+                    background: '#F7F5EF',
+                    customClass: {
+                        container: 'vk-container',
+                        popup: 'vk-popup',
+                        actions: 'vk-actions' + (showCartButton ? '' : ' vk-single'),
+                        confirmButton: 'vk-btn vk-confirm',
+                        cancelButton: 'vk-btn vk-cancel',
+                    },
+                    showClass: {
+                        popup: 'vk-in'
+                    },
+                    hideClass: {
+                        popup: 'vk-out'
+                    },
+                    didOpen: (popup) => {
+                        popup.addEventListener('mouseenter', Swal.stopTimer);
+                        popup.addEventListener('mouseleave', Swal.resumeTimer);
+                    },
+                }).then((result) => {
+                    if (result.isConfirmed && showCartButton) window.location.href = CART_URL;
+                });
+            };
+
+            // Themed success popup for any message: vukaSuccess('Profile updated')
+            window.vukaSuccess = function (message = '', title = 'Success') {
+                return window.vukaCartAdded({ title, message, showCartButton: false });
+            };
+
+            // Any existing Swal.fire({ icon: 'success', ... }) or Swal.fire('Title', 'text', 'success')
+            // elsewhere in the app now uses the VukaShop design automatically.
+            if (typeof Swal !== 'undefined' && !Swal.__vukaPatched) {
+                const nativeFire = Swal.fire.bind(Swal);
+                Swal.fire = function (...args) {
+                    const o = args[0];
+                    if (typeof o === 'string' && args[2] === 'success') {
+                        return window.vukaSuccess(args[1] || '', o);
+                    }
+                    if (o && typeof o === 'object' && o.icon === 'success' && !o.customClass && !o.html) {
+                        return window.vukaSuccess(o.text || '', o.title || 'Success');
+                    }
+                    return nativeFire(...args);
+                };
+                Swal.__vukaPatched = true;
+            }
+
+            window.addEventListener('cart:added', (e) => window.vukaCartAdded(e.detail || {}));
+
+            @if ($flashCart || $flashSuccess)
+                document.addEventListener('DOMContentLoaded', () => {
+                    @if ($flashCart)
+                        window.vukaCartAdded(@json(is_array($flashCart) ? $flashCart : ['name' => (string) $flashCart]));
+                    @else
+                        window.vukaCartAdded({
+                            title: 'Success',
+                            message: @json((string) $flashSuccess),
+                            showCartButton: false
+                        });
+                    @endif
+                });
+            @endif
+        })();
     </script>
 </head>
 
