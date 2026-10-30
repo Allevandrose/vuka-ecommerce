@@ -14,6 +14,9 @@
     $primaryImage = $galleryImages[0] ?? null;
     $maxQty = $product->track_inventory ? max(1, (int) $product->stock_quantity) : 999;
 
+    $initialWishlisted = auth()->check() && auth()->user()->isWishlisted($product->id);
+    $isGuest = ! auth()->check();
+
     $productSchema = array_filter([
         '@context' => 'https://schema.org/',
         '@type' => 'Product',
@@ -77,7 +80,7 @@
     @endpush
 
     <script>
-        function productGallery(imagesArray, maxQty) {
+        function productGallery(imagesArray, maxQty, initialWishlisted) {
             return {
                 images: imagesArray || [],
                 index: 0,
@@ -85,6 +88,9 @@
                 qty: 1,
                 adding: false,
                 added: false,
+
+                wishlisted: !!initialWishlisted,
+                wishlistBusy: false,
 
                 lens: false,
                 lensX: 50,
@@ -209,6 +215,49 @@
                     }
                 },
 
+                async toggleWishlist() {
+                    if (this.wishlistBusy) return;
+                    @if ($isGuest)
+                        window.location.href = '{{ route('login') }}';
+                        return;
+                    @endif
+                    this.wishlistBusy = true;
+                    try {
+                        const res = await fetch('{{ route('wishlist.toggle') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ product_id: {{ $product->id }} })
+                        });
+
+                        if (res.status === 401) {
+                            window.location.href = '{{ route('login') }}';
+                            return;
+                        }
+
+                        const data = await res.json();
+
+                        if (!res.ok || !data.success) {
+                            if (window.showToast) window.showToast(data.message || 'Could not update wishlist.', 'error');
+                            return;
+                        }
+
+                        this.wishlisted = !!data.wishlisted;
+                        if (window.Alpine && Alpine.store('wishlist')) {
+                            Alpine.store('wishlist').count = data.wishlist_count;
+                        }
+                        if (window.showToast) window.showToast(data.message, 'success');
+                    } catch (e) {
+                        if (window.showToast) window.showToast('Network error. Please try again.', 'error');
+                    } finally {
+                        this.wishlistBusy = false;
+                    }
+                },
+
                 async share() {
                     const data = { title: @js($product->name), url: window.location.href };
                     if (navigator.share) { try { await navigator.share(data); } catch (e) {} }
@@ -235,7 +284,7 @@
     </nav>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 mb-12"
-         x-data="productGallery({{ Js::from($galleryImages) }}, {{ $maxQty }})"
+         x-data="productGallery({{ Js::from($galleryImages) }}, {{ $maxQty }}, {{ $initialWishlisted ? 'true' : 'false' }})"
          @keydown.window="onKey($event)">
 
         <div class="lg:sticky lg:top-24 lg:self-start">
@@ -295,6 +344,15 @@
                             </div>
 
                             <div class="absolute top-3 right-3 flex flex-col gap-2">
+                                <button type="button"
+                                        @click.stop="toggleWishlist()"
+                                        :disabled="wishlistBusy"
+                                        :aria-pressed="wishlisted"
+                                        aria-label="Toggle wishlist for {{ $product->name }}"
+                                        class="w-10 h-10 rounded-full bg-white/90 backdrop-blur border border-line flex items-center justify-center shadow-sm transition active:scale-90 hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss disabled:opacity-60"
+                                        :class="wishlisted ? 'text-red-500 border-red-200 hover:bg-white hover:text-red-600' : 'text-ink/50 hover:bg-white hover:text-red-500'">
+                                    <i class="fa-heart text-sm" :class="wishlisted ? 'fas' : 'far'"></i>
+                                </button>
                                 <button type="button" @click.stop="open()" aria-label="Zoom image"
                                         class="w-10 h-10 rounded-full bg-white/90 backdrop-blur border border-line text-ink flex items-center justify-center shadow-sm hover:bg-white hover:text-moss transition">
                                     <i class="fas fa-expand text-sm"></i>
@@ -422,8 +480,7 @@
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1.5 text-moss font-medium">
-                            <span class="w-2 h-2 rounded-full bg-moss"></span>
-                            In stock ({{ $product->stock_quantity }} available)
+                            <span class="w-2 h-2 rounded-full bg-moss"></span> In stock ({{ $product->stock_quantity }} available)
                         </span>
                     @endif
                 </div>

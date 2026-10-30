@@ -15,6 +15,7 @@ use App\Http\Controllers\Shop\CategoryController;
 use App\Http\Controllers\Shop\HomeController;
 use App\Http\Controllers\Shop\ProductController;
 use App\Http\Controllers\Shop\SearchController;
+use App\Http\Controllers\Shop\WishlistController;
 use App\Http\Controllers\Vendor\ProductController as VendorProductController;
 use App\Http\Controllers\VendorApplicationController;
 use App\Http\Controllers\VendorRegistrationController;
@@ -22,6 +23,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+// ============================================
+// PUBLIC ROUTES
+// ============================================
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('category.show');
@@ -37,6 +41,18 @@ Route::middleware(['auth'])->prefix('cart')->name('cart.')->group(function () {
     Route::post('/', [CartController::class, 'store'])->name('store');
     Route::patch('/{cartItem}', [CartController::class, 'update'])->name('update');
     Route::delete('/{cartItem}', [CartController::class, 'destroy'])->name('destroy');
+});
+
+// ============================================
+// SHOP — WISHLIST
+// ============================================
+Route::middleware(['auth'])->prefix('wishlist')->name('wishlist.')->group(function () {
+    Route::get('/', [WishlistController::class, 'index'])->name('index');
+    Route::get('/count', [WishlistController::class, 'count'])->name('count');
+    Route::post('/', [WishlistController::class, 'store'])->name('store');
+    Route::post('/toggle', [WishlistController::class, 'toggle'])->name('toggle');
+    Route::delete('/{wishlistItem}', [WishlistController::class, 'destroy'])->name('destroy');
+    Route::post('/{wishlistItem}/move-to-cart', [WishlistController::class, 'moveToCart'])->name('moveToCart');
 });
 
 // ============================================
@@ -62,7 +78,7 @@ Route::prefix('vendor')->name('vendor.')->group(function () {
 });
 
 // ============================================
-// STAFF REGISTRATION
+// STAFF REGISTRATION (Private URL)
 // ============================================
 Route::get('/staff/register', [StaffRegistrationController::class, 'showRegistrationForm'])
     ->name('staff.register.form');
@@ -223,4 +239,7 @@ Route::middleware(['auth', 'staff.status'])->group(function () {
     Route::get('/auth/google/check', [GoogleAuthController::class, 'checkGoogleLinked'])->name('auth.google.check');
 });
 
+// ============================================
+// AUTH ROUTES (Laravel Breeze)
+// ============================================
 require __DIR__ . '/auth.php';

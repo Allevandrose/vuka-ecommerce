@@ -684,7 +684,7 @@
         </div>
     </div>
 
-    <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur-md border-b border-line transition-shadow duration-200"
+   <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur-md border-b border-line transition-shadow duration-200"
         :class="scrolled ? 'shadow-[0_6px_20px_-12px_rgba(20,35,28,0.35)]' : ''">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center gap-3 lg:gap-6">
 
@@ -738,9 +738,14 @@
 
             <div class="hidden lg:flex items-center gap-3">
                 <div class="flex items-center gap-1 text-lg text-ink/70">
-                    <button
-                        class="h-10 w-10 rounded-full flex items-center justify-center hover:text-gold hover:bg-white transition-colors"
-                        aria-label="Wishlist"><i class="far fa-heart"></i></button>
+                    {{-- W8a: real wishlist link with badge --}}
+                    <a href="{{ route('wishlist.index') }}"
+                        class="relative h-10 w-10 rounded-full flex items-center justify-center hover:text-red-500 hover:bg-white transition-colors"
+                        aria-label="Wishlist">
+                        <i class="far fa-heart"></i>
+                        <span x-show="$store.wishlist.count > 0" x-text="$store.wishlist.count"
+                            class="absolute top-0.5 right-0.5 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span>
+                    </a>
                     <a href="{{ route('cart.index') }}"
                         class="relative h-10 w-10 rounded-full flex items-center justify-center hover:text-gold hover:bg-white transition-colors"
                         aria-label="Cart">
@@ -778,6 +783,13 @@
                                 class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-paper transition-colors">
                                 <i class="fas fa-shopping-bag text-moss w-4 text-center"></i> My Cart
                             </a>
+                            {{-- W8a: My Wishlist in the account dropdown --}}
+                            <a href="{{ route('wishlist.index') }}"
+                                class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-paper transition-colors">
+                                <i class="far fa-heart text-red-500 w-4 text-center"></i> My Wishlist
+                                <span x-show="$store.wishlist.count > 0" x-text="$store.wishlist.count"
+                                    class="ml-auto bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
+                            </a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit"
@@ -802,6 +814,14 @@
                     aria-label="Search">
                     <i class="fas fa-search text-sm"></i>
                 </button>
+                {{-- W8a: mobile header wishlist icon --}}
+                <a href="{{ route('wishlist.index') }}"
+                    class="relative h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-sm hover:bg-line/50 transition-colors"
+                    aria-label="Wishlist">
+                    <i class="far fa-heart text-sm"></i>
+                    <span x-show="$store.wishlist.count > 0" x-text="$store.wishlist.count"
+                        class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"></span>
+                </a>
                 <a href="{{ route('cart.index') }}"
                     class="relative h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-sm hover:bg-line/50 transition-colors"
                     aria-label="Cart">
@@ -877,6 +897,14 @@
                         <span x-show="$store.cart.count > 0" x-text="$store.cart.count"
                             class="ml-auto bg-gold text-ink text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
                     </a>
+                    {{-- W8a: real wishlist drawer link with badge --}}
+                    <a href="{{ route('wishlist.index') }}" @click="menuOpen = false"
+                        class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium hover:bg-white transition-colors">
+                        <i class="far fa-heart w-5 text-center text-red-500"></i>
+                        My Wishlist
+                        <span x-show="$store.wishlist.count > 0" x-text="$store.wishlist.count"
+                            class="ml-auto bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
+                    </a>
                     <a href="#" @click="menuOpen = false"
                         class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium hover:bg-white transition-colors">
                         <i class="fas fa-truck-fast w-5 text-center text-moss"></i> Track Order
@@ -884,10 +912,6 @@
                     <a href="#" @click="menuOpen = false"
                         class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium hover:bg-white transition-colors">
                         <i class="fas fa-headset w-5 text-center text-moss"></i> Support
-                    </a>
-                    <a href="#" @click="menuOpen = false"
-                        class="flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium hover:bg-white transition-colors">
-                        <i class="far fa-heart w-5 text-center text-moss"></i> Wishlist
                     </a>
                 </nav>
 

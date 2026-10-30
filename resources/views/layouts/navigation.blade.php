@@ -1,5 +1,6 @@
 @php
     $cartCount = auth()->check() ? auth()->user()->cartCount() : 0;
+    $wishlistCount = auth()->check() ? auth()->user()->wishlistCount() : 0;
 @endphp
 
 <nav x-data="{ open: false }"
@@ -91,8 +92,20 @@
                 @endauth
             </div>
 
-            {{-- Right side: cart icon + account dropdown --}}
+            {{-- Right side: wishlist + cart icons + account dropdown --}}
             <div class="hidden sm:flex items-center gap-2 sm:ms-6">
+
+                {{-- Wishlist --}}
+                <a href="{{ route('wishlist.index') }}"
+                   aria-label="Wishlist"
+                   class="relative h-10 w-10 rounded-full bg-white border border-[#E4E0D5] flex items-center justify-center text-[#14231C]/70 hover:text-[#E11D48] hover:bg-white transition-colors shadow-sm">
+                    <i class="far fa-heart text-sm"></i>
+                    @if ($wishlistCount > 0)
+                        <span class="absolute -top-1 -right-1 bg-[#E11D48] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-[#F7F5EF]">
+                            {{ $wishlistCount }}
+                        </span>
+                    @endif
+                </a>
 
                 {{-- Cart --}}
                 <a href="{{ route('cart.index') }}"
@@ -149,6 +162,17 @@
                         <a href="{{ route('cart.index') }}"
                            class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[#14231C] hover:bg-[#F7F5EF] transition-colors">
                             <i class="fas fa-shopping-bag text-[#20503C] w-4 text-center"></i> My Cart
+                            @if ($cartCount > 0)
+                                <span class="ml-auto bg-[#E7A93B] text-[#14231C] text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ $cartCount }}</span>
+                            @endif
+                        </a>
+
+                        <a href="{{ route('wishlist.index') }}"
+                           class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[#14231C] hover:bg-[#F7F5EF] transition-colors">
+                            <i class="far fa-heart text-[#E11D48] w-4 text-center"></i> My Wishlist
+                            @if ($wishlistCount > 0)
+                                <span class="ml-auto bg-[#E11D48] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ $wishlistCount }}</span>
+                            @endif
                         </a>
 
                         <form method="POST" action="{{ route('logout') }}">
@@ -164,6 +188,16 @@
 
             {{-- Mobile right-side actions + hamburger --}}
             <div class="flex sm:hidden items-center gap-2 -me-2">
+                <a href="{{ route('wishlist.index') }}"
+                   aria-label="Wishlist"
+                   class="relative h-10 w-10 rounded-full bg-white border border-[#E4E0D5] flex items-center justify-center text-[#14231C]/70 shadow-sm">
+                    <i class="far fa-heart text-sm"></i>
+                    @if ($wishlistCount > 0)
+                        <span class="absolute -top-1 -right-1 bg-[#E11D48] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-[#F7F5EF]">
+                            {{ $wishlistCount }}
+                        </span>
+                    @endif
+                </a>
                 <a href="{{ route('cart.index') }}"
                    aria-label="Cart"
                    class="relative h-10 w-10 rounded-full bg-white border border-[#E4E0D5] flex items-center justify-center text-[#14231C]/70 shadow-sm">
@@ -260,6 +294,31 @@
                         My Products
                     </a>
                 @endif
+
+                {{-- Cart + Wishlist quick entries with badges --}}
+                <a href="{{ route('cart.index') }}"
+                   class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
+                          {{ request()->routeIs('cart.*')
+                              ? 'bg-white text-[#20503C] shadow-sm'
+                              : 'text-[#14231C]/85 hover:bg-white/70' }}">
+                    <i class="fas fa-shopping-bag text-[#20503C] w-5 text-center"></i>
+                    <span class="ml-2">My Cart</span>
+                    @if ($cartCount > 0)
+                        <span class="ml-auto bg-[#E7A93B] text-[#14231C] text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ $cartCount }}</span>
+                    @endif
+                </a>
+
+                <a href="{{ route('wishlist.index') }}"
+                   class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
+                          {{ request()->routeIs('wishlist.*')
+                              ? 'bg-white text-[#20503C] shadow-sm'
+                              : 'text-[#14231C]/85 hover:bg-white/70' }}">
+                    <i class="far fa-heart text-[#E11D48] w-5 text-center"></i>
+                    <span class="ml-2">My Wishlist</span>
+                    @if ($wishlistCount > 0)
+                        <span class="ml-auto bg-[#E11D48] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ $wishlistCount }}</span>
+                    @endif
+                </a>
             @endauth
         </div>
 

@@ -327,4 +327,39 @@ class User extends Authenticatable
     {
         return (int) $this->cartItems()->sum('quantity');
     }
+
+    // ============================================
+    // WISHLIST
+    // ============================================
+
+    /**
+     * The user's wishlist rows. A wishlist is a set, not a multiset —
+     * no quantity column. One row per (user, product); re-adding is
+     * idempotent (see WishlistController::store).
+     */
+    public function wishlistItems(): HasMany
+    {
+        return $this->hasMany(WishlistItem::class);
+    }
+
+    /**
+     * Number of products saved to the wishlist. Used by the header
+     * badge. Returns 0 for guests — they have no wishlist.
+     */
+    public function wishlistCount(): int
+    {
+        return (int) $this->wishlistItems()->count();
+    }
+
+    /**
+     * Whether this specific product is already on the user's wishlist.
+     * Used by the heart button on product cards and the product page
+     * to render the filled vs. outline state without an extra query.
+     */
+    public function isWishlisted(int $productId): bool
+    {
+        return $this->wishlistItems()
+            ->where('product_id', $productId)
+            ->exists();
+    }
 }

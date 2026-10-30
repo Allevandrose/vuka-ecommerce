@@ -9,13 +9,17 @@
         }
     }
     $lowStock = $product->inStock() && $product->track_inventory && $product->isLowStock();
+
+    $initialWishlisted = auth()->check() && auth()->user()->isWishlisted($product->id);
+    $isGuest = ! auth()->check();
 @endphp
 
 <article class="group relative flex flex-col h-full min-w-0 bg-white rounded-xl sm:rounded-2xl border border-line p-1.5 sm:p-2.5 transition duration-200 focus-within:border-moss/40 md:hover:border-moss/40 md:hover:shadow-lg md:hover:-translate-y-0.5"
          x-data="{
-             fav: false,
              adding: false,
              added: false,
+             wishlisted: {{ $initialWishlisted ? 'true' : 'false' }},
+             wishlistBusy: false,
              async addToCart() {
                  if (this.adding || this.added) return;
                  this.adding = true;
@@ -55,10 +59,51 @@
                  } finally {
                      this.adding = false;
                  }
+             },
+             async toggleWishlist() {
+                 if (this.wishlistBusy) return;
+                 @if ($isGuest)
+                     window.location.href = '{{ route('login') }}';
+                     return;
+                 @endif
+                 this.wishlistBusy = true;
+                 try {
+                     const res = await fetch('{{ route('wishlist.toggle') }}', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                             'X-Requested-With': 'XMLHttpRequest',
+                             'Accept': 'application/json',
+                         },
+                         body: JSON.stringify({ product_id: {{ $product->id }} })
+                     });
+
+                     if (res.status === 401) {
+                         window.location.href = '{{ route('login') }}';
+                         return;
+                     }
+
+                     const data = await res.json();
+
+                     if (!res.ok || !data.success) {
+                         if (window.showToast) window.showToast(data.message || 'Could not update wishlist.', 'error');
+                         return;
+                     }
+
+                     this.wishlisted = !!data.wishlisted;
+                     if (window.Alpine && Alpine.store('wishlist')) {
+                         Alpine.store('wishlist').count = data.wishlist_count;
+                     }
+                     if (window.showToast) window.showToast(data.message, 'success');
+                 } catch (e) {
+                     if (window.showToast) window.showToast('Network error. Please try again.', 'error');
+                 } finally {
+                     this.wishlistBusy = false;
+                 }
              }
          }">
 
-    {{-- IMAGE --}}
     <div class="relative rounded-lg sm:rounded-xl overflow-hidden bg-white border border-line/60 aspect-square">
         <a href="{{ route('product.show', $product->slug) }}"
            class="block w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-moss"
@@ -90,7 +135,6 @@
             @endif
         </a>
 
-        {{-- Badges (left) --}}
         <div class="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex flex-col items-start gap-1 pointer-events-none max-w-[65%]">
             @if ($product->isOnSale())
                 <span class="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-red-500 text-white shadow-sm">
@@ -110,24 +154,22 @@
             @endif
         </div>
 
-        {{-- Wishlist heart --}}
         <button type="button"
-                @click.prevent="fav = !fav"
-                :aria-pressed="fav"
-                aria-label="Add {{ $product->name }} to wishlist"
-                class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-[13px] sm:text-sm transition active:scale-90 md:hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss"
-                :class="fav ? 'text-red-500' : 'text-ink/40 md:hover:text-red-500'">
-            <i class="fa-heart" :class="fav ? 'fas' : 'far'"></i>
+                @click.prevent="toggleWishlist()"
+                :disabled="wishlistBusy"
+                :aria-pressed="wishlisted"
+                aria-label="Toggle wishlist for {{ $product->name }}"
+                class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-[13px] sm:text-sm transition active:scale-90 md:hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss disabled:opacity-60"
+                :class="wishlisted ? 'text-red-500' : 'text-ink/40 md:hover:text-red-500'">
+            <i class="fa-heart" :class="wishlisted ? 'fas' : 'far'"></i>
         </button>
 
-        {{-- Low stock hint --}}
         @if ($lowStock)
             <span class="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-amber-100 text-amber-700 pointer-events-none">
                 Only {{ $product->stock_quantity }} left
             </span>
         @endif
 
-        {{-- Out of stock overlay --}}
         @if (!$product->inStock())
             <div class="absolute inset-0 bg-white/70 flex items-center justify-center pointer-events-none">
                 <span class="px-2.5 sm:px-3 py-1 rounded-full bg-ink text-white text-[10px] sm:text-xs font-semibold tracking-wide">
@@ -137,23 +179,19 @@
         @endif
     </div>
 
-    {{-- DETAILS --}}
     <div class="flex flex-col flex-1 min-w-0 px-0.5 sm:px-1 pt-2 sm:pt-2.5 pb-0.5">
 
-        {{-- Tag / category --}}
         <a href="{{ $product->category ? route('category.show', $product->category->slug) : '#' }}"
            class="text-[11px] sm:text-xs font-semibold text-moss md:hover:text-moss/70 transition truncate">
             {{ $tag() }}
         </a>
 
-        {{-- Name (fixed two-line height keeps the grid aligned) --}}
         <a href="{{ route('product.show', $product->slug) }}"
            class="block font-semibold text-[13px] sm:text-sm mt-0.5 leading-snug text-ink md:hover:text-moss transition line-clamp-2 min-h-[2.25rem] sm:min-h-[2.5rem]"
            title="{{ $product->name }}">
             {{ $product->name }}
         </a>
 
-        {{-- Rating --}}
         <div class="mt-1 h-4 flex items-center gap-1 text-[11px] sm:text-xs text-muted">
             @if ($product->rating_count > 0)
                 <i class="fas fa-star text-gold text-[10px]"></i>
@@ -162,7 +200,6 @@
             @endif
         </div>
 
-        {{-- Price + add button on one row --}}
         <div class="mt-auto pt-2 sm:pt-2.5 flex items-end justify-between gap-2">
             <div class="min-w-0 flex-1">
                 @if ($product->isOnSale())

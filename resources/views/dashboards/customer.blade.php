@@ -13,6 +13,15 @@
         ->filter(fn ($item) => $item->product !== null)
         ->sum(fn ($item) => $item->subtotal());
     $cartCurrency = auth()->user()->cartItems()->with('product')->first()?->currency() ?? 'KES';
+
+    $wishlistItems = auth()->user()->wishlistItems()
+        ->with('product')
+        ->latest()
+        ->take(3)
+        ->get()
+        ->filter(fn ($item) => $item->product !== null);
+
+    $wishlistItemCount = auth()->user()->wishlistCount();
 @endphp
 
 <x-app-layout>
@@ -59,7 +68,10 @@
                     </div>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <a href="{{ route('wishlist.index') }}"
+                   data-wishlist-link
+                   class="group block bg-white overflow-hidden shadow-sm sm:rounded-lg ring-1 transition
+                          {{ $wishlistItemCount > 0 ? 'ring-rose-200 hover:ring-rose-400' : 'ring-transparent hover:ring-rose-200' }}">
                     <div class="p-6">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 bg-rose-500 rounded-lg p-3">
@@ -67,13 +79,16 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                                 </svg>
                             </div>
-                            <div class="ml-4">
+                            <div class="ml-4 flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-500">Wishlist</p>
-                                <p class="text-2xl font-semibold text-gray-900">0</p>
+                                <p id="wishlist-stat-count" class="text-2xl font-semibold text-gray-900">{{ $wishlistItemCount }}</p>
                             </div>
+                            <span class="text-xs font-semibold text-rose-600 opacity-0 group-hover:opacity-100 transition">
+                                View <i class="fas fa-arrow-right text-[10px]"></i>
+                            </span>
                         </div>
                     </div>
-                </div>
+                </a>
 
                 <a href="{{ route('cart.index') }}"
                    data-cart-link
@@ -166,6 +181,68 @@
                 </div>
             </div>
 
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <i class="far fa-heart text-rose-500"></i> Your Wishlist
+                        </h4>
+                        @if ($wishlistItemCount > 0)
+                            <a href="{{ route('wishlist.index') }}"
+                               class="text-sm font-semibold text-rose-600 hover:text-rose-700">
+                                View wishlist <i class="fas fa-arrow-right text-[10px]"></i>
+                            </a>
+                        @endif
+                    </div>
+
+                    @if ($wishlistItems->isEmpty())
+                        <p class="text-sm text-gray-500">
+                            Your wishlist is empty.
+                            <a href="{{ route('home') }}" class="font-semibold text-moss hover:text-moss/70">
+                                Browse products <i class="fas fa-arrow-right text-[10px]"></i>
+                            </a>
+                        </p>
+                    @else
+                        <ul class="divide-y divide-gray-100">
+                            @foreach ($wishlistItems as $item)
+                                @php $p = $item->product; @endphp
+                                <li class="py-3 first:pt-0 last:pb-0 flex items-center gap-3">
+                                    <a href="{{ route('product.show', $p->slug) }}"
+                                       class="shrink-0 w-14 h-14 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+                                        @if ($p->primary_image)
+                                            <img src="{{ asset('storage/' . $p->primary_image) }}"
+                                                 alt="{{ $p->name }}"
+                                                 class="w-full h-full object-contain p-1">
+                                        @else
+                                            <i class="fas fa-image text-gray-300"></i>
+                                        @endif
+                                    </a>
+                                    <div class="flex-1 min-w-0">
+                                        <a href="{{ route('product.show', $p->slug) }}"
+                                           class="block text-sm font-semibold text-gray-900 truncate hover:text-moss">
+                                            {{ $p->name }}
+                                        </a>
+                                        <p class="text-xs text-gray-500">
+                                            {{ $p->formattedPrice() }}
+                                        </p>
+                                    </div>
+                                    <a href="{{ route('product.show', $p->slug) }}"
+                                       class="text-xs font-semibold text-rose-600 hover:text-rose-700 whitespace-nowrap">
+                                        View <i class="fas fa-arrow-right text-[10px]"></i>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+
+                        @if ($wishlistItemCount > $wishlistItems->count())
+                            <p class="mt-3 text-xs text-gray-500">
+                                + {{ $wishlistItemCount - $wishlistItems->count() }} more item(s) in your wishlist.
+                            </p>
+                        @endif
+                    @endif
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -192,6 +269,19 @@
                     </div>
                 </div>
 
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">❤️ My Wishlist</h4>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Products you've saved for later.
+                        </p>
+                        <a href="{{ route('wishlist.index') }}"
+                           class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-700">
+                            View Wishlist
+                        </a>
+                    </div>
+                </div>
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg opacity-80">
                     <div class="p-6">
                         <div class="flex items-center justify-between mb-2">
@@ -207,39 +297,26 @@
                         </button>
                     </div>
                 </div>
-
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg opacity-80">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-lg font-semibold text-gray-900">❤️ Wishlist</h4>
-                            <span class="text-[10px] font-bold uppercase tracking-wide text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                Coming soon
-                            </span>
-                        </div>
-                        <p class="text-sm text-gray-500 mb-4">Items you save for later will be listed here.</p>
-                        <button type="button" disabled
-                                class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-500 uppercase tracking-widest cursor-not-allowed">
-                            View Wishlist
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
     <script>
         (function () {
-            const countEl = document.getElementById('cart-stat-count');
-            const subtotalEl = document.getElementById('cart-strip-subtotal');
-            const linkEl = document.querySelector('[data-cart-link]');
-            if (!countEl) return;
+            const cartCountEl = document.getElementById('cart-stat-count');
+            const cartSubtotalEl = document.getElementById('cart-strip-subtotal');
+            const cartLinkEl = document.querySelector('[data-cart-link]');
 
-            const endpoint = @json(route('cart.count'));
+            const wishlistCountEl = document.getElementById('wishlist-stat-count');
+            const wishlistLinkEl = document.querySelector('[data-wishlist-link]');
 
-            function applyRing(count) {
-                if (!linkEl) return;
-                linkEl.classList.toggle('ring-amber-200', count > 0);
-                linkEl.classList.toggle('ring-transparent', count === 0);
+            const cartEndpoint = @json(route('cart.count'));
+            const wishlistEndpoint = @json(route('wishlist.count'));
+
+            function toggleRing(el, activeClass, inactiveClass, on) {
+                if (!el) return;
+                el.classList.toggle(activeClass, !!on);
+                el.classList.toggle(inactiveClass, !on);
             }
 
             function formatMoney(currency, amount) {
@@ -251,37 +328,58 @@
             }
 
             async function refreshCartCount() {
+                if (!cartCountEl) return;
                 try {
-                    const res = await fetch(endpoint, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
+                    const res = await fetch(cartEndpoint, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                         credentials: 'same-origin',
                         cache: 'no-store',
                     });
                     if (!res.ok) return;
                     const data = await res.json();
                     if (typeof data.count === 'number') {
-                        const current = Number(countEl.textContent.trim());
+                        const current = Number(cartCountEl.textContent.trim());
                         if (current !== data.count) {
-                            countEl.textContent = data.count;
-                            applyRing(data.count);
+                            cartCountEl.textContent = data.count;
+                            toggleRing(cartLinkEl, 'ring-amber-200', 'ring-transparent', data.count > 0);
                         }
                     }
-                    if (subtotalEl && data.currency) {
-                        subtotalEl.textContent = formatMoney(data.currency, data.subtotal);
+                    if (cartSubtotalEl && data.currency) {
+                        cartSubtotalEl.textContent = formatMoney(data.currency, data.subtotal);
                     }
-                } catch (e) {
-                    /* silently ignore */
-                }
+                } catch (e) { /* ignore */ }
             }
 
-            document.addEventListener('DOMContentLoaded', refreshCartCount);
+            async function refreshWishlistCount() {
+                if (!wishlistCountEl) return;
+                try {
+                    const res = await fetch(wishlistEndpoint, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (typeof data.count === 'number') {
+                        const current = Number(wishlistCountEl.textContent.trim());
+                        if (current !== data.count) {
+                            wishlistCountEl.textContent = data.count;
+                            toggleRing(wishlistLinkEl, 'ring-rose-200', 'ring-transparent', data.count > 0);
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            function refreshAll() {
+                refreshCartCount();
+                refreshWishlistCount();
+            }
+
+            document.addEventListener('DOMContentLoaded', refreshAll);
             document.addEventListener('visibilitychange', function () {
-                if (document.visibilityState === 'visible') refreshCartCount();
+                if (document.visibilityState === 'visible') refreshAll();
             });
-            window.addEventListener('focus', refreshCartCount);
+            window.addEventListener('focus', refreshAll);
         })();
     </script>
 </x-app-layout>
